@@ -704,6 +704,7 @@ class CBF_RRTstrr(object):
     # ######################################################################################################################:
     # ############################## SafeSteering Algorithm 2: #############################################################:
 
+    # TODO: creat ba a safeSteeringExact when performing rewiring 
     def SafeSteering(self, v_nearest, desired_theta, m=10):
         """
         This method takes the desired theta to steer to (desired_theta); the vertex to steer from (v_nearest);
@@ -832,6 +833,7 @@ class CBF_RRTstrr(object):
         :param v_new:
         :return:
         """
+        #TODO[RSS]: Perform SafesteeringExact when rewiring (before macking this change, check if the position of the rewired vertex has deviated)
         v_pr = v_new
         CBF_RRTstrEnable  = self.CBF_RRTstrEnable
         for v_near in Nnear_vSet:
@@ -1016,13 +1018,18 @@ class CBF_RRTstrr(object):
 
             # ===== Steering from xy_v_nearest towards xy_sample with M-steps (to be specified):
 
+            # TODO[RSS] $$$$$$$$$$$$$$$$$$$$$$$ No need for this safe-steering step, you just need to safe steer in chose parent. Given that choose parent procedure will return the nn vertex anyway. 
+
             qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(v_nearest, desired_theta,m=ball_steeringSteps) #TODO (cbfRRTst)
             sample_okFlag = isAcceptableSample(traj = qTrajectory, desiredSteps_num = ball_steeringSteps)
             if sample_okFlag:
                 v_new = Vertex(State=qFinal, StateTraj=qTrajectory, CtrlTraj=uTrajectory, timeTraj=tTrajectory,curTime=tFinal, indexID=i) #TODO (cbfRRT*)
             else:
                 continue
+            #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
+
+            
             #Since we will have more artificial samples to adapt the sampling distribution:
             if len(v_new.StateTraj[0,:]) is 1:
                 actual_i = actual_i + 1
