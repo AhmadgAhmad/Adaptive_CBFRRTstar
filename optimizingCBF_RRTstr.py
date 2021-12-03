@@ -1019,7 +1019,7 @@ class CBF_RRTstrr(object):
             # ===== Steering from xy_v_nearest towards xy_sample with M-steps (to be specified):
 
             # TODO[RSS] $$$$$$$$$$$$$$$$$$$$$$$ No need for this safe-steering step, you just need to safe steer in chose parent. Given that choose parent procedure will return the nn vertex anyway. 
-
+            # hi
             qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(v_nearest, desired_theta,m=ball_steeringSteps) #TODO (cbfRRTst)
             sample_okFlag = isAcceptableSample(traj = qTrajectory, desiredSteps_num = ball_steeringSteps)
             if sample_okFlag:

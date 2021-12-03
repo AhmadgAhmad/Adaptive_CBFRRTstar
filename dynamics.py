@@ -7,7 +7,7 @@ import abc
 from params import *
 import matplotlib.pyplot as plot
 import matplotlib
-from sympy import *
+#from sympy import *
 
 class Dyn(Enum):
 
