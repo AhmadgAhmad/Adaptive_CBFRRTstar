@@ -354,6 +354,8 @@ class Simulation(object):
 
                 t0_obs_cbfs = timeit.default_timer()
                 # CBF agent/obstacle
+                # Checking the obstacles in robot's sensor footprint is done here
+
                 for k in range(len(self.obsts)):
                     if isinstance(self.obsts[k],Sphere):
                         flag = self.agt_circD(agt,self.obsts[k])
