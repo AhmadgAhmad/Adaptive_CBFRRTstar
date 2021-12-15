@@ -705,14 +705,15 @@ class CBF_RRTstrr(object):
     # ############################## SafeSteering Algorithm 2: #############################################################:
 
     # TODO: creat ba a safeSteeringExact when performing rewiring 
-    def SafeSteering(self, v_nearest, desired_theta, m=10):
+    def SafeSteering(self, v_nearest, desired_theta, m=10, extFlag = False ):
         """
-        This method takes the desired theta to steer to (desired_theta); the vertex to steer from (v_nearest);
+        Take the desired theta to steer to (desired_theta); the vertex to steer from (v_nearest);
         the mission space (embed in simObject); and the current tree (embed in self). It will steer with
         m-Steps (m=10) in the  theta direction.
         :param v_nearest:
         :param desired_theta:
-        :param m:
+        :param m: The number 
+        :param extFlag: if enabled CLF-CBF-QP controller will be used to generate the motion trajectory 
         :return:
         """
         if m<1:
