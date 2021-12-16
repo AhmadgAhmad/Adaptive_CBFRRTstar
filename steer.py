@@ -6,16 +6,17 @@ import numpy as np
 import agent,goal,dynamics, simulation
 
 class Steer:
-    def __init__(self, v_init, v_f, obsList = None, m=10, simObject = None):
+    def __init__(self, q_init = None, q_f= None, obsList = None, m = None, simObject = None):
         
-        self.v_init = v_init        # The initial vertex
-        self.v_f = v_f              # The final vertex
+        self.q_init = q_init        # The initial vertex
+        self.q_f = q_f              # The final vertex
         self.m = m                  # The number of discrete steps of the QP controller 
         #self.extFlag = extFlag      # Enabling flag for exact steering (if enabled, CLF constrint will be included ) 
         self.obsList = obsList      # The list of obstacles
         self.simObject = simObject  # Simulation object that contains the numerical methods to evolve the system dynamics, ... ets 
     
-    def safeSteer(self, v_init, v_f, m = 10):
+    def safeSteer(self, q_init, q_f, m = 10):
+        m = self.comp_msteps()
         if m<1:
             m=1
         vRef = np.linspace(1.0, 1.0, m)  # Assume we're working with the unicycle dynamics
@@ -39,4 +40,23 @@ class Steer:
         tFinal = tTrajectory[0][-1] + tInitial
         return qFinal, tFinal, uTrajectory[0], qTrajectory[0], tTrajectory[0] + tInitial
     def ext_SafeSteer(self,v_init, v_f):
+        pass
+
+    def comp_msteps(self):
+        """
+        Compute the number of steps to of the local trajectory planner (the number of steps here corresponds
+        to the number of instances to solve the Qps)
+        """
+        pass
+
+    def comp_tauSafe(self): #TODO [further improvement] talk with Yang
+        """
+        Compute the safe duration of the ZOH control signal 
+        """
+        pass
+
+    def comp_tauStbl(self):#TODO [further improvement] Talk with Yang
+        """
+        Compute the stability-guarantee duration
+        """
         pass
