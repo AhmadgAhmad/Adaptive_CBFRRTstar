@@ -100,5 +100,9 @@ class Params(object):
             Params.__instance.save_tree = config.getboolean('CE', 'save_tree')
             Params.__instance.save_adapDist = config.getboolean('CE', 'save_adapDist')
 
+            #Debugging logs; 
+            Params.__instance.debug_flag = config.getboolean('DEBUG_LOG', 'debug_flag')
+
+
         return Params.__instance
     
