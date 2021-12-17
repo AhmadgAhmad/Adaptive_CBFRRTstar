@@ -1,0 +1,6 @@
+
+Appending to numpy arrays is much slower than appending to lists. 
+You could append to lists then use "arrays" to make it an array: 
+Example: 
+ 
+
