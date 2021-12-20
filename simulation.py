@@ -70,91 +70,105 @@ class Simulation(object):
     def add_cbf_pair(self, m, agt, obst):
         m.update()
 
-        #TODO: make the rDegree as an attribute of the dynamic
-        rDegreeAgt = agt.dyn.rDegree
-
-        # hocbf = HOCBF(self,m,agt,obst,rDegree=rDegreeAgt,type_alpha=typeAlpha.LIN_LIN)
-
-
-
-        #Add the CBF constraints directly without going through methods in other classes:
-        if self.params.hocbf_ufn_en:
-            hocbf.Update_m()
-        else:
-            q_dot = agt.get_x_dot()[0:2] - obst.get_x_dot()[0:2]
-            p1 = self.params.alpha_linear_p1
-            #alpha11_h = p1 * obst.h.eval(agt)
-            if isinstance(obst,Sphere):
-                alpha1_h = p1 *((agt.state[0:2] - obst.state[0:2]).T.dot(obst.M).dot((agt.state[0:2] - obst.state[0:2]))[0][0] - (
-                        obst.sign * agt.radius + obst.radius) ** 2) * obst.sign
-                grad_h = (2 * obst.M.dot((agt.state[0:2] - obst.state[0:2]))) * obst.sign
-                psi1 = grad_h.T.dot(q_dot[0:2]) + alpha1_h
-            # 6-3-2021:
-                p1 = 1
-                p2 = 2
-                h = (agt.state[0] - obst.state[0])**2+(agt.state[1] - obst.state[1])**2 - (obst.radius+.7)**2
-                Lfh = 2*agt.u[0]*(agt.state[0]-obst.state[0])*np.cos(agt.dyn.cur_theta)+\
-                      2*agt.u[0]*(agt.state[1]-obst.state[1])*np.sin(agt.dyn.cur_theta)
-                psi1 = 2*(agt.u[0]**2)*agt.state[0]*(np.cos(agt.dyn.cur_theta)**2)+ \
-                      2 * (agt.u[0] ** 2) *agt.state[1]*(np.sin(agt.dyn.cur_theta)**2)+\
-                       (2*agt.u[0]*(agt.state[1]-obst.state[1])*np.cos(agt.dyn.cur_theta)-
-                       2*agt.u[0]*(agt.state[0]-obst.state[0])*np.sin(agt.dyn.cur_theta))*agt.u[1]+\
-                       (p1)*h+(p2)*Lfh
-
-
-            else: #For ellipsoid obstacle:
-                a_aug = obst.a + ((agt.radius  * obst.sign)*1)
-                b_aug = obst.b + ((agt.radius  * obst.sign)*1)
-                theta1 = math.radians(obst.angle)
-
-                c = math.cos(theta1)
-                s = math.sin(theta1)
-
-                aa = (c / a_aug) ** 2 + (s / b_aug) ** 2
-                bb = s * c * ((1 / b_aug )** 2 - (1 / a_aug) ** 2)
-                cc = (s / a_aug) ** 2 + (c / b_aug) ** 2
-                M_ellip = np.array([[aa, bb], [bb, cc]])
+        if agt.dyn_enum is Dyn.UNICYCLE:
+            #Add the CBF constraints directly without going through methods in other classes:
+            if self.params.hocbf_ufn_en:
+                hocbf.Update_m()
+            else:
+                # q_dot = agt.get_x_dot()[0:2] - obst.get_x_dot()[0:2]
+                # q_dot = agt.get_q_dot()[0:2] #TODO [speedQ]
+                # p1 = self.params.alpha_linear_p1
                 #alpha11_h = p1 * obst.h.eval(agt)
-                # h = ((agt.state[0:2] - obst.state[0:2]).transpose().dot(M_ellip).dot((agt.state[0:2] - obst.state[0:2]))[0][0] - 1) * obst.sign
-                # grad_h = (2 * M_ellip.dot((agt.state[0:2] - obst.state[0:2]))) * obst.sign
-                # psi1 = grad_h.T.dot(q_dot[0:2]) + alpha1_h
-                # 6-3-2021 (Doing the computation this way is faster when executing the code):
-                M1 = aa
-                Mb = 2*bb
-                M2 = cc
-                p1 = -1
-                p2 = .5
+                if isinstance(obst,Sphere):
+                    alpha1_h = p1 *((agt.state[0:2] - obst.state[0:2]).T.dot(obst.M).dot((agt.state[0:2] - obst.state[0:2]))[0][0] - (
+                            obst.sign * agt.radius + obst.radius) ** 2) * obst.sign
+                    grad_h = (2 * obst.M.dot((agt.state[0:2] - obst.state[0:2]))) * obst.sign
+                    psi1 = grad_h.T.dot(q_dot[0:2]) + alpha1_h
+                # 6-3-2021:
+                    p1 = 1
+                    p2 = 2
+                    h = (agt.state[0] - obst.state[0])**2+(agt.state[1] - obst.state[1])**2 - (obst.radius+.7)**2
+                    Lfh = 2*agt.u[0]*(agt.state[0]-obst.state[0])*np.cos(agt.dyn.cur_theta)+\
+                        2*agt.u[0]*(agt.state[1]-obst.state[1])*np.sin(agt.dyn.cur_theta)
+                    psi1 = 2*(agt.u[0]**2)*agt.state[0]*(np.cos(agt.dyn.cur_theta)**2)+ \
+                        2 * (agt.u[0] ** 2) *agt.state[1]*(np.sin(agt.dyn.cur_theta)**2)+\
+                        (2*agt.u[0]*(agt.state[1]-obst.state[1])*np.cos(agt.dyn.cur_theta)-
+                        2*agt.u[0]*(agt.state[0]-obst.state[0])*np.sin(agt.dyn.cur_theta))*agt.u[1]+\
+                        (p1)*h+(p2)*Lfh
 
-                #good
-                p1 = 10
-                p2 = .5
-                # p1 = 100
-                # p2 = 50
 
-                # p1 = 55.0
-                # p2 = 30.0
+                else: #For ellipsoid obstacle:
+                    a_aug = obst.a + ((agt.radius  * obst.sign)*1)
+                    b_aug = obst.b + ((agt.radius  * obst.sign)*1)
+                    theta1 = np.radians(obst.angle)
 
-                h = (M1*(agt.state[0] - obst.state[0])**2+Mb*(agt.state[0] - obst.state[0])*(agt.state[1] - obst.state[1])+\
-                     (M2*(agt.state[1] - obst.state[1])**2)-1)
-                # h = (agt.state[0:2] - obst.state[0:2]).transpose().dot(M_ellip).dot((agt.state[0:2] - obst.state[0:2]))[0][0] - 1) * obst.sign
-                Lfh = ((agt.state[0] - obst.state[0]) * (2*M1*agt.u[0]*np.cos(agt.dyn.cur_theta) + Mb*agt.u[0]* np.sin(agt.dyn.cur_theta)))+ \
-                      ((agt.state[1] - obst.state[1]) * (2 * M2 * agt.u[0] * np.sin(agt.dyn.cur_theta) + Mb * agt.u[0] * np.cos(agt.dyn.cur_theta)))
-                # psi1 = 2*M1*(agt.u[0]*np.cos(agt.dyn.cur_theta))**2 + 2*M2*(agt.u[0]*np.sin(agt.dyn.cur_theta))**2+2*Mb*(agt.u[0]**2)*np.cos(agt.dyn.cur_theta)*np.sin(agt.dyn.cur_theta) +agt.u[0]*(-2*M1*np.sin(agt.dyn.cur_theta)*(agt.state[0] - obst.state[0])-Mb*(agt.state[1] - obst.state[1])*np.sin(agt.dyn.cur_theta)+Mb*(agt.state[0] - obst.state[0])*np.cos(agt.dyn.cur_theta)+2*M2*np.cos(agt.dyn.cur_theta) *(agt.state[1] - obst.state[1])) * agt.u[1]+\
-                #                  +(p1)*Lfh + (p2)*h
+                    c = np.cos(theta1)
+                    s = np.sin(theta1)
+                    s = c
 
-                sr  = np.sin(agt.dyn.cur_theta)
-                cr  = np.cos(agt.dyn.cur_theta)
-                v = agt.u[0]
-                w = agt.u[1]
-                psi1 = (agt.state[0] - obst.state[0]) * (-2*M1*v*sr+Mb*v*cr) * w +\
-                       (2*M1*v*cr+Mb*v*sr)*v*cr + \
-                       (agt.state[1] - obst.state[1]) * (2 * M2 * v * cr - Mb * v * sr) * w + \
-                       (2 * M2 * v * sr + Mb * v * cr) * v * sr + \
-                       (p1+p2) * Lfh + (p2*p1) * h
-                    #Compute the gradient:
-            m.addConstr((psi1[0] >= 0.0), name="CBF_{}".format(agt.id))
-        # t1_adcbf = timeit.default_timer()
-        # T_adcbf = t1_adcbf - t0_adcbf
+                    aa = (c / a_aug) ** 2 + (s / b_aug) ** 2
+                    bb = s * c * ((1 / b_aug )** 2 - (1 / a_aug) ** 2)
+                    cc = (s / a_aug) ** 2 + (c / b_aug) ** 2
+                    M_ellip = np.array([[aa, bb], [bb, cc]])
+                    #alpha11_h = p1 * obst.h.eval(agt)
+                    # h = ((agt.state[0:2] - obst.state[0:2]).transpose().dot(M_ellip).dot((agt.state[0:2] - obst.state[0:2]))[0][0] - 1) * obst.sign
+                    # grad_h = (2 * M_ellip.dot((agt.state[0:2] - obst.state[0:2]))) * obst.sign
+                    # psi1 = grad_h.T.dot(q_dot[0:2]) + alpha1_h
+                    # 6-3-2021 (Doing the computation this way is faster when executing the code):
+                    M1 = aa
+                    Mb = 2*bb
+                    M2 = cc
+                    p1 = -1
+                    p2 = .5
+
+                    #good
+                    p1 = 10
+                    p2 = .5
+                    
+                    p1 = 109
+                    p2 = 30
+
+                    # p1 = 55.0
+                    # p2 = 30.0
+
+                    h = (M1*(agt.state[0] - obst.state[0])**2+Mb*(agt.state[0] - obst.state[0])*(agt.state[1] - obst.state[1])+\
+                        (M2*(agt.state[1] - obst.state[1])**2)-1)
+                    # h = (agt.state[0:2] - obst.state[0:2]).transpose().dot(M_ellip).dot((agt.state[0:2] - obst.state[0:2]))[0][0] - 1) * obst.sign
+                    Lfh = ((agt.state[0] - obst.state[0]) * (2*M1*agt.u[0]*np.cos(agt.state[2]) + Mb*agt.u[0]* np.sin(agt.state[2])))+ \
+                        ((agt.state[1] - obst.state[1]) * (2 * M2 * agt.u[0] * np.sin(agt.state[2]) + Mb * agt.u[0] * np.cos(agt.state[2])))
+                    # psi1 = 2*M1*(agt.u[0]*np.cos(agt.dyn.cur_theta))**2 + 2*M2*(agt.u[0]*np.sin(agt.dyn.cur_theta))**2+2*Mb*(agt.u[0]**2)*np.cos(agt.dyn.cur_theta)*np.sin(agt.dyn.cur_theta) +agt.u[0]*(-2*M1*np.sin(agt.dyn.cur_theta)*(agt.state[0] - obst.state[0])-Mb*(agt.state[1] - obst.state[1])*np.sin(agt.dyn.cur_theta)+Mb*(agt.state[0] - obst.state[0])*np.cos(agt.dyn.cur_theta)+2*M2*np.cos(agt.dyn.cur_theta) *(agt.state[1] - obst.state[1])) * agt.u[1]+\
+                    #                  +(p1)*Lfh + (p2)*h
+
+                    sr  = np.sin(agt.state[2])
+                    cr  = np.cos(agt.state[2])
+                    v = agt.u[0]
+                    w = agt.u[1]
+                    psi1 = (agt.state[0] - obst.state[0]) * (-2*M1*v*sr+Mb*v*cr) * w +\
+                        (2*M1*v*cr+Mb*v*sr)*v*cr + \
+                        (agt.state[1] - obst.state[1]) * (2 * M2 * v * cr - Mb * v * sr) * w + \
+                        (2 * M2 * v * sr + Mb * v * cr) * v * sr + \
+                        (p1+p2) * Lfh + (p2*p1) * h
+                        #Compute the gradient:
+                m.addConstr((psi1[0] >= 0.0), name="CBF_{}".format(agt.id))
+            # t1_adcbf = timeit.default_timer()
+            # T_adcbf = t1_adcbf - t0_adcbf
+        
+        elif agt.dyn_enum is Dyn.SINGLE_INT:
+            if self.params.decentralized:
+                obst_x_dot = obst.get_x_dot((0,0))
+                k_cbf = obst.k_cbf
+                k_cbf = 0.5
+            else:
+                obst_x_dot = obst.get_x_dot()
+                k_cbf = 2
+            p_cbf = 1.0
+
+            h_val = obst.h.eval(agt)
+            lg_h = obst.h.grad(agt).T.dot(agt.get_q_dot() - obst_x_dot)[0][0]
+            constr = m.addConstr((lg_h)>=-k_cbf*h_val**p_cbf, name="CBF_{}".format(agt.id))
+            attr = GRB.Attr.RHS
+            m.update()
+
 
        # hocbf.get_psi2()
         if self.params.plot_cbf:
@@ -214,6 +228,7 @@ class Simulation(object):
 
         xa = agt.state[0]
         ya = agt.state[1]
+        
         ra_sensor = agt.footPrint_radi
 
         d = math.sqrt((xo-xa)**2+(yo-ya)**2)
@@ -324,17 +339,20 @@ class Simulation(object):
                                 curTheta = agt.dyn.cur_theta
                                 u_ref_t = make_column([u_ref[0,0], u_ref[1,0] - curTheta])
                             else:
+                                # Define u_ref as the negative gradient of a potential function  
                                 curTheta = agt.dyn.cur_theta
-                                u_ref_t = make_column([u_ref[0, self.cur_timestep],u_ref[1, self.cur_timestep] -curTheta])
-
+                                # u_ref_t = make_column([u_ref[0, self.cur_timestep],u_ref[1, self.cur_timestep] -curTheta]) 
+                                u_ref_t = np.array([u_ref[0, self.cur_timestep],u_ref[1, self.cur_timestep] -curTheta])
                         elif agt.dyn_enum is Dyn.UNICYCLE_EXT:
                             curTheta = agt.dyn.cur_state[2]
                             u_ref_t = make_column([u_ref[0, self.cur_timestep]-curTheta, u_ref[1, self.cur_timestep]])
                         elif agt.dyn_enum is Dyn.SINGLE_INT: #TODO (SnglInt Exte)
                             curTheta = agt.dyn.cur_state[1]
-                            u_ref_t = make_column([u_ref[0, self.cur_timestep] - curTheta, u_ref[1, self.cur_timestep]])
+                            # u_ref_t = make_column([u_ref[0, self.cur_timestep] - curTheta, u_ref[1, self.cur_timestep]])
+                            u_ref_t = make_column(np.array([u_ref[0, self.cur_timestep],u_ref[1, self.cur_timestep]]))
 
-                        cost_func = (agt.u - u_ref_t).T.dot(agt.u - u_ref_t)[0][0] #
+
+                        cost_func = (agt.u - u_ref_t).T.dot((agt.u - u_ref_t))[0][0] #
                         m.setObjective(m.getObjective() + cost_func, GRB.MINIMIZE)
                         m.update()
 
@@ -361,7 +379,7 @@ class Simulation(object):
                         flag = self.agt_circD(agt,self.obsts[k])
                     else:
                         flag = self.agt_circD(agt, self.obsts[k])
-                    if flag:
+                    if flag:#flag: # If there's an obstacle in the sensor footprint 
                         self.add_cbf_pair(m, agt, self.obsts[k])
                 t1_obs_cbfs  = timeit.default_timer()
                 T_obs_cbfs = t1_obs_cbfs-t0_obs_cbfs
@@ -369,16 +387,16 @@ class Simulation(object):
 
             # Solve the optimization problem
             #FeasFlagDummy = checkFeasibility(self, m)
-            t0_opt = timeit.default_timer()
+            
             m.optimize()
-            t1_opt = timeit.default_timer()
-            T_opt = t1_opt - t1_opt
-
+            
+            
+            #Plot the CBF constraint here: 
             if self.params.plot_delta:
                 [self.clf_data.add_delta_val(m.getVarByName("delta{}".format(agt.id)).x, agt.id) for agt in self.agents]
 
 
-            '''This loop will keep devide the integration step size if infeasibility of the QP is encounterd.
+            '''This loop will keep deviding the integration step size if infeasibility of the QP is encountered.
             # This will happen if the step size is long enough to steer the next step inside an obstacle.
             # TODO: refer to the ZOH $\tau$-CBF paper. ANALYZE it first with the Unicycle dynamics, the case study there is for double integrator dynamics.
             TODO: refer to HOCLBF with STL Wei, et al.'''
@@ -388,7 +406,7 @@ class Simulation(object):
             #------ The checking approach--------------------------------------------------------------------
             # dummyAgent = self.agents[0]
             # dummyAgentU = dummyAgent.dyn.get_u()
-            t0_stepping = timeit.default_timer()
+            
             if m.Status == 3: #Infeasible
                 #TODO (find a better way to abort)
                 # retrackAbortFlag = True
@@ -421,58 +439,50 @@ class Simulation(object):
                     elif ag.dyn_enum is Dyn.UNICYCLE:
                         #---- Truncate the trajectory that has an infeasible final state (man look out for the complexity!!):
 
-                        if len(ag.dyn.trajectory[0,:]) <=1:
-                            ag.dyn.trajectory = np.vstack(ag.dyn.qTrajectory[0:2,0])
-                            prvFeasible_state = ag.dyn.trajectory
-                            prvFeasible_state = np.vstack(prvFeasible_state)
-                            # ---- Truncate the theta trajectory:
-                            ag.dyn.thetaTrajectory = ag.dyn.qTrajectory[2,0]
-                            prvFeasible_theta = ag.dyn.thetaTrajectory
-                            # prvFeasible_theta = np.array(prvFeasible_theta)
+                        if len(ag.dyn.trajectory) <=1: 
+                            ag.dyn.trajectory = ag.dyn.trajectory
+                            prvFeasible_state = ag.dyn.trajectory[0]
+                            prvFeasible_state = np.array(prvFeasible_state)
                             # ---- Truncate the time trajectory:
                             ag.dyn.time = ag.dyn.time
                             prvFeasible_state_time = ag.dyn.time
                             prvFeasible_state_time = np.array(prvFeasible_state_time)
-                            # ---- Truncate the qTrajectory:
-                            ag.dyn.qTrajectory = ag.dyn.qTrajectory
-                            prvFeasible_q = ag.dyn.qTrajectory
-                            prvFeasible_q = np.vstack(prvFeasible_q)
 
                         else:
-                            ag.dyn.trajectory = ag.dyn.trajectory[:, :-1]
-                            prvFeasible_state = ag.dyn.trajectory[:, -1]
-                            prvFeasible_state = np.vstack(prvFeasible_state)
-                            #---- Truncate the theta trajectory:
-                            ag.dyn.thetaTrajectory = ag.dyn.thetaTrajectory[:-1]
-                            prvFeasible_theta = ag.dyn.thetaTrajectory[-1]
-                            #prvFeasible_theta = np.array(prvFeasible_theta)
+                            ag.dyn.trajectory = ag.dyn.trajectory[:-1]
+                            prvFeasible_state = ag.dyn.trajectory[-1]  #TODO E[speedQ] Reterack to 2 previous steps since the previous step is already very close. 
                             #---- Truncate the time trajectory:
                             ag.dyn.time = ag.dyn.time[:-1]
                             prvFeasible_state_time = ag.dyn.time[-1]
                             prvFeasible_state_time = np.array(prvFeasible_state_time)
-                            #---- Truncate the qTrajectory:
-                            ag.dyn.qTrajectory = ag.dyn.qTrajectory[:, :-1]
-                            prvFeasible_q = ag.dyn.qTrajectory[:, -1]
-                            prvFeasible_q = np.vstack(prvFeasible_q)
 
                         #-----Set the current state, theta, and time as the previous one:
                         ag.dyn.cur_state = prvFeasible_state
-                        ag.dyn.cur_theta = prvFeasible_theta
                         ag.dyn.cur_time = prvFeasible_state_time
 
                         if retrackAbortFlag:
                             pass
                         else:
                             #Move one step and we'll see if the problem is still infeasible:
-                            ag.step(u=np.vstack(ag.dyn.get_u()), plot=False, time_step=dt)
+                            try:
+                                ag.step(u=ag.dyn.get_u(), plot=False, time_step=dt)
+                                feas_u = True
+                            except:
+                                feas_u = False
+                            if not(feas_u):
+                                ag.step(u=np.array([0.5,0]), plot=False, time_step=dt)
+                                
+                                
 
-            else: #Procceed the next step in time without truncating anything (the feasible case)
+
+
+            else: # Proceed the next step in time without truncating anything (the feasible case)
                 if self.r_dt != self.params.step_size:
                     self.r_dt = self.params.step_size
                 [ag.step(u=None, plot=False) for ag in self.agents]
                 #Reset the recorded dt as soon it become feasible:
-            t1_stepping = timeit.default_timer()
-            T_steppping = t1_stepping - t0_stepping
+            
+            
 
                 # If the next optimization is infeasible retrack otherwise proceed to the next step.
                 # A challenge: the moment m.optimize() is infeasible the controls are lost you have to update them manulay till
@@ -481,7 +491,6 @@ class Simulation(object):
             #------ original method (no checking)----
             #[ag.step(u=None, plot=False) for ag in self.agents]
             #The ZOH approuch:
-            t0_stuff = timeit.default_timer()
             t_now = agt.dyn.time[-1]
             if self.params.plot_sim:
                 self.plot_scenario()
@@ -507,8 +516,7 @@ class Simulation(object):
             if self.cur_timestep == steps:
                 # return (solution[0].x, solution[1].x)
                 return x_sol, u_sol
-            t1_stuff = timeit.default_timer()
-            T_stuff = t1_stuff - t0_stuff
+
         #Returning the states, and control trajectories:
         t0_ret = timeit.default_timer()
         if self.agents[0].dyn_enum is Dyn.UNICYCLE:
@@ -516,7 +524,7 @@ class Simulation(object):
             agentsU_Trajectory = []
             timeTraj            = []
             for agt in self.agents:
-                agentsTrajectory.append(agt.dyn.qTrajectory)
+                agentsTrajectory.append(agt.dyn.trajectory)
                 agentsU_Trajectory.append(agt.dyn.uTrajectory)
                 timeTraj.append(agt.dyn.time)
 
@@ -543,6 +551,14 @@ class Simulation(object):
             for agt in self.agents:
                 agentsTrajectory.append(agt.dyn.trajectory)
                 agentsU_Trajectory.append(agt.dyn.uTrajectory)
+                timeTraj.append(agt.dyn.time)
+        elif self.agents[0].dyn_enum is Dyn.SINGLE_INT:
+            agentsTrajectory = []
+            agentsU_Trajectory = []
+            timeTraj = []
+            for agt in self.agents:
+                agentsTrajectory.append(agt.dyn.trajectory)
+                # agentsU_Trajectory.append(agt.dyn.uTrajectory)
                 timeTraj.append(agt.dyn.time)
         #plotTrajs(agentsTrajectory, agentsU_Trajectory, timeTraj)
         t1_ret = timeit.default_timer()
@@ -653,12 +669,12 @@ def plotTrajs(agentsTrajectory, agentsU_Trajectory,timeTraj,trialPrefixName,save
         figUs[agt_i].show()
         agt_i +=1
 def arcLength(qTrajectory):
-
-    x = qTrajectory[0,:]
-    y = qTrajectory[1,:]
+    qTrajectory = np.asarray(qTrajectory)
+    x = qTrajectory[:,0]
+    y = qTrajectory[:,1]
     arc_Length = 0
 
-    for i in range(len(qTrajectory[0,:])):
+    for i in range(len(qTrajectory[:,0])):
         if i==0:
             arc_Length = 0
         else:
@@ -736,7 +752,7 @@ def main():
             desired_theta = math.atan2(-1, -1)
             vRef = np.linspace(1.0,1.0, 100)
             wRef = np.linspace(-45/57.3,-45/57.3,100)
-            u_ref = np.vstack([vRef, wRef])
+            u_ref = np.array([vRef, wRef])
             sim.add_agent(Agent((0, 0),theta=-45/57.3,instructs=u_ref, dynamics=dyn))
             #sim.add_agent(Agent((10.0, 0),-u_ref, dynamics=dyn))
             # sim.add_obstacle(Ellipsoid([6.0, 1.5], [.3, 2], angle=45))
