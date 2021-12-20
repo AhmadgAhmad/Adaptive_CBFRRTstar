@@ -202,7 +202,7 @@ class Agent(object):
                 self.print_state()
 
     def dist_to_goal(self):
-        return np.sqrt((self.state[0:2]-self.goal.goal).T.dot(self.state[0:2]-self.goal.goal)[0][0])
+        return np.sqrt((self.state[0:2]-self.goal.goal).T.dot(self.state[0:2]-self.goal.goal))
 
     def print_state(self):
         self.dyn.print_state()

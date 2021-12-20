@@ -12,7 +12,7 @@ class Goal(object):
 
     def __init__(self, pos,u_ref = None):
         self.params = Params()
-        self.goal = np.array([pos]).T
+        self.goal = np.array(pos)
         self.v = Function(self.v_func, self.del_v)
         self.u_ref = u_ref #This must be fed for the inputs that is not a control variable (it is a vector, i.e. typically
                            #if one to choose to have w to be the control and v/mu constant (u_ref) for the unucycle, or extended respectively)
@@ -89,8 +89,8 @@ class Goal(object):
             gamma = params.gamma
         # Add relaxation variable delta
         delta = m.addVar(vtype=GRB.CONTINUOUS, name="delta{}".format(agt.id))
-        v_val = self.v.eval(agt)[0][0]
-        lf_v = (self.v.grad(agt).T.dot(agt.get_x_dot()[0:2]))[0][0]
+        v_val = self.v.eval(agt)
+        lf_v = (self.v.grad(agt).T.dot(agt.get_q_dot()[0:2]))
         # lf_v = gamma*self.v.grad(agt).transpose().dot(H).dot(agt.get_x_dot())[0][0]
         #lf_v.getVar(1)
         #constraint = (lf_v + gamma * v_val <= delta)
@@ -98,8 +98,8 @@ class Goal(object):
         # cost_func = 0.5 * agt.u.T.dot(np.identity(2)).dot(agt.u)[0][0]+\
         #             p*delta*delta #need to replace the identity weight
 
-        cost_func = 0.5 * agt.u.T.dot(np.identity(2)).dot(agt.u)[0][0] + \
-                    p * delta * delta + gamma*self.v.grad(agt).T.dot(H).dot(agt.get_x_dot()[0:2])[0][0]
+        cost_func = 0.5 * agt.u.T.dot(np.identity(2)).dot(agt.u) + \
+                    p * delta * delta + gamma*self.v.grad(agt).T.dot(H).dot(agt.get_q_dot()[0:2])
             #
         if type(agt.dyn) is not Unicycle:
             m.addConstr(constraint)
