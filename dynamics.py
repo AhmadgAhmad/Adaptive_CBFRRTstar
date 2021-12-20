@@ -519,7 +519,8 @@ class SingleIntegrator(Dynamics):
                | 0  1 |
         """
         self.params = Params()
-        self.init_state = make_column(init_state)
+        # self.init_state = make_column(init_state)
+        self.init_state = init_state
         self.cur_state = self.init_state
 
         ndim = self.init_state.shape[0]
@@ -529,21 +530,23 @@ class SingleIntegrator(Dynamics):
         
         self.time_step = self.params.step_size
         self.cur_time = 0
-        self.time = np.array([0])
-        self.trajectory = np.array(self.init_state)
+        self.time = 0
+        # self.trajectory = np.array(self.init_state)
 
         #The proposed list-like trajectories:
-        # self.trajectory      = [self.cur_state]
-        # self.uTrajectory     = []
+        self.trajectory      = [self.cur_state]
+        self.uTrajectory     = []
          
     def get_state(self, t_idx=None):
         if t_idx is None:
             return self.cur_state
         else:
-            return self.trajectory[:,t_idx]
+            return self.trajectory[t_idx]
+            # return self.trajectory[:,t_idx]
 
     def get_x_dot(self, x, u=(0,0),n=1):
-        return make_column(self.B.dot(np.array(u)))
+        return self.B.dot(np.array(u))
+        # return make_column(self.B.dot(np.array(u)))
 
     def add_control(self, m, id):
         v = self.params.max_speed
@@ -552,7 +555,7 @@ class SingleIntegrator(Dynamics):
             u.append(m.addVar(lb=-v, ub=v, vtype=GRB.CONTINUOUS, name="agt{}_u{}".format(id, u_idx)))
         u = np.array(u)
         m.addConstr(u.transpose().dot(u) <= v**2)
-        return make_column(u)
+        return u
 
     def step(self, u,dt):
         x0 = self.cur_state
@@ -563,9 +566,11 @@ class SingleIntegrator(Dynamics):
 
         self.cur_state = x1
         self.cur_time += self.time_step
-
+        self.trajectory.append(self.cur_state) 
+        self.uTrajectory.append(u)
         self.time = np.append(self.time, self.cur_time)
-        self.trajectory = np.append(self.trajectory, self.cur_state, axis=1)
+        
+        # self.trajectory = np.append(self.trajectory, self.cur_state, axis=1)
 
         return self.cur_state
 
