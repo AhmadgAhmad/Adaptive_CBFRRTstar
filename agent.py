@@ -77,8 +77,6 @@ class Agent(object):
 
     #Will be used if u_ref is specified (TODO: make sure that this is correct)
     def add_control(self, m, id):
-        #u = self.dyn.add_control(m, id)
-        #For the unicycle dynamics:
         if self.dyn_enum is Dyn.UNICYCLE:
             #Check is the agent is defined with a goal then extract u_ref from its goal class (in case w is the only ctrl variable)
             if self.goal is not None: #TODO: return error if single control is enabled and the other one is not fed as a u_ref
@@ -87,8 +85,8 @@ class Agent(object):
             vInt_ctrlFlag = self.params.vInt_enabled
             wInt_ctrlFlag = self.params.wInt_enabled
             if not vInt_ctrlFlag and not wInt_ctrlFlag:
-                v = self.u_ref[0, 0]
-                w = self.u_ref[1, 0]
+                v = self.u_ref[0]
+                w = self.u_ref[1]
             elif not vInt_ctrlFlag and wInt_ctrlFlag:
                 if self.goal is not None:
                     v = u_ref[0]
@@ -102,50 +100,19 @@ class Agent(object):
                 u = self.dyn.add_control(m, id)
                 v = u[0]
                 w = u[1]
-            u = np.vstack([v, w])
-
-        elif self.dyn_enum is Dyn.UNICYCLE_EXT:
-            # Check is the agent is defined with a goal then extract u_ref from its goal class (in case w is the only ctrl variable)
-            if self.goal is not None:  # TODO: return error if single control is enabled and the other one is not fed as a u_ref
-                u_ref = self.goal.u_ref
-
-            wExt_ctrlFlag = self.params.wExt_enabled
-            muExt_ctrlFlag = self.params.muExt_enabled
-            if not wExt_ctrlFlag and not muExt_ctrlFlag:
-                w = self.u_ref[0, 0]
-                mu = self.u_ref[1, 0]
-            elif not wExt_ctrlFlag and muExt_ctrlFlag:
-                w = self.u_ref[0, 0]
-                mu = self.dyn.add_control(m, id)
-            elif wExt_ctrlFlag and not muExt_ctrlFlag:
-                w = self.dyn.add_control(m, id)
-                cur_time = self.dyn.cur_time
-                time_index = cur_time / self.dyn.time_step
-                mu = self.u_ref[1, int(time_index)]
-            elif wExt_ctrlFlag and muExt_ctrlFlag:
-                u = self.dyn.add_control(m, id)
-                w = u[0]
-                mu = u[1]
-            u = np.vstack([w,mu])
+            u = np.array([v, w])
+    
         else:
             u = self.dyn.add_control(m, id)
-        #Unicycle dynamics:
-        # w = self.dyn.add_control(m, id)
-        # v = self.u_ref[0,0]
-        # u = np.vstack([v,w])
-        #Extended dynamics:
-        # w = self.dyn.add_control(m, id) #const mu
-        # mu = self.u_ref[1, 0] #const mu
-        # u = np.vstack([w,mu]) #const mu
         self.u = u
 
     def get_state(self, t_idx=-1):
         return self.dyn.get_state(t_idx)
 
-    def get_x_dot(self, u=None,n=1):
+    def get_q_dot(self, u=None,n=1):
         if u is None:
             u = self.u
-        return self.dyn.get_x_dot(self.state, u,n)
+        return self.dyn.get_x_dot(self.state, u)
 
     def get_x_dot_dot(self,q=None,u=None):
         #UNICYCLE_EXT = 3, the enum
@@ -187,7 +154,7 @@ class Agent(object):
                     u = [x[0].x for x in self.u]
                     v = u[0]
                     w = u[1]
-                u = np.vstack([v,w])
+                u = np.array([v,w])
 
             elif self.dyn_enum is Dyn.UNICYCLE_EXT:
                 wExt_ctrlFlag = self.params.wExt_enabled
