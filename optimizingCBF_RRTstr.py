@@ -277,9 +277,9 @@ class CBF_RRTstrr(object):
             pass
 
         if worldChar is 'TestingCol':
-            obs1 = Sphere([10,10], radius=5)
-            obs2 = Ellipsoid([1, 0.2], [.15,.5], angle=45)
-            obs3 = Ellipsoid([1, 0.2], [.15,0.5], angle=-45)
+            obs1 = Sphere(np.array([10,10]), radius=5)
+            obs2 = Ellipsoid(np.array([1, 0.2]), np.array([.15,.5]), angle=45)
+            obs3 = Ellipsoid(np.array([1, 0.2]),np.array([.15,0.5]), angle=-45)
             #--- self.add_obstacleToWorld(obs1)
             self.add_obstacleToWorld(obs2)
             self.add_obstacleToWorld(obs3)
@@ -726,7 +726,7 @@ class CBF_RRTstrr(object):
         if self.robotDynType is Dyn.SINGLE_INT:
             u1_ref = np.linspace(edge_length*math.cos(desired_theta),edge_length*math.cos(desired_theta), m)
             u2_ref = np.linspace(edge_length*math.sin(desired_theta),edge_length*math.sin(desired_theta), m)
-            u_ref = np.vstack([u1_ref,u2_ref])
+            u_ref = np.array([u1_ref,u2_ref]).T
         else: 
             vRef = np.linspace(0.5, 0.5, m)  # Assume we're working with the unicycle dynamics
             wRef = np.linspace(desired_theta, desired_theta, m)
@@ -746,10 +746,12 @@ class CBF_RRTstrr(object):
         self.simObject.u_refs = list()
         self.simObject.cur_timestep = 0
         self.simObject.time_vec = [0]
+        # goal = Goal([2,-.51])
         # self.simObject.add_agent(Agent(xy_v_nearest, radius=.4,theta=desired_theta ,instructs=u_ref,dynamics=Dyn.UNICYCLE))
         self.simObject.add_agent(Agent(xy_v_nearest, radius=.4,theta=desired_theta ,instructs=u_ref,dynamics=self.robotDynType))
+        # self.simObject.add_agent(Agent(xy_v_nearest, radius=.4,theta=desired_theta ,instructs=goal,dynamics=self.robotDynType))
         qTrajectory, uTrajectory, tTrajectory = self.simObject.initiate()  # TODO: incorporate \theta with the trajectory
-        qFinal = qTrajectory[0][:,-1]
+        qFinal = qTrajectory[0][-1]
         tFinal = tTrajectory[0][-1] + tInitial
         return qFinal, tFinal, uTrajectory, qTrajectory[0], tTrajectory[0] + tInitial
 
