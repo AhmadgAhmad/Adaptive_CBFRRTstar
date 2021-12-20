@@ -30,6 +30,7 @@ import sklearn
 from scipy.stats import multivariate_normal
 import pickle
 
+
 class CE_GMM(object):
     def __init__(self,sNoise,mus,covs):
         self.k = 0
@@ -112,7 +113,7 @@ class CBF_RRTstrr(object):
         #simulation Attributes:
         self.obsWorldList = []
         self.simObject = None
-
+        self.robotDynType = Dyn.SINGLE_INT
         #Probing attributes:
         self.bestGCost = None
         self.Vexisit = False
@@ -277,9 +278,11 @@ class CBF_RRTstrr(object):
 
         if worldChar is 'TestingCol':
             obs1 = Sphere([10,10], radius=5)
-            obs2 = Ellipsoid([1, 0], [2,2], angle=-45)
-            # self.add_obstacleToWorld(obs1)
+            obs2 = Ellipsoid([1, 0.2], [.15,.5], angle=45)
+            obs3 = Ellipsoid([1, 0.2], [.15,0.5], angle=-45)
+            #--- self.add_obstacleToWorld(obs1)
             self.add_obstacleToWorld(obs2)
+            self.add_obstacleToWorld(obs3)
 
         if worldChar is 'Circ_world':
             #This world to demonstrad a carfully designed world where multiple paths with have identical cost
@@ -705,7 +708,7 @@ class CBF_RRTstrr(object):
     # ############################## SafeSteering Algorithm 2: #############################################################:
 
     # TODO: creat ba a safeSteeringExact when performing rewiring 
-    def SafeSteering(self, v_nearest, desired_theta, m=10, extFlag = False ):
+    def SafeSteering(self, v_nearest, desired_theta, m=10 ,edge_length = 1 ):
         """
         Take the desired theta to steer to (desired_theta); the vertex to steer from (v_nearest);
         the mission space (embed in simObject); and the current tree (embed in self). It will steer with
@@ -718,12 +721,21 @@ class CBF_RRTstrr(object):
         """
         if m<1:
             m=1
-        vRef = np.linspace(1.0, 1.0, m)  # Assume we're working with the unicycle dynamics
-        wRef = np.linspace(desired_theta, desired_theta, m)
-        if len(wRef) is 0:
-            desired_theta
-            raise Exception('check out the desired theta')
-        u_ref = np.vstack([vRef, wRef]) #TODO (slow)
+        
+        #TODO[Single integrator]
+        if self.robotDynType is Dyn.SINGLE_INT:
+            u1_ref = np.linspace(edge_length*math.cos(desired_theta),edge_length*math.cos(desired_theta), m)
+            u2_ref = np.linspace(edge_length*math.sin(desired_theta),edge_length*math.sin(desired_theta), m)
+            u_ref = np.vstack([u1_ref,u2_ref])
+        else: 
+            vRef = np.linspace(0.5, 0.5, m)  # Assume we're working with the unicycle dynamics
+            wRef = np.linspace(desired_theta, desired_theta, m)
+            u_ref = np.vstack([vRef, wRef]) #TODO (slow)
+
+        # if len(wRef) is 0:
+        #     desired_theta
+        #     raise Exception('check out the desired theta')
+
         if type(v_nearest)==Vertex:
             xy_v_nearest = v_nearest.State[0:2]  # The starting point of the trajectory
             tInitial = v_nearest.curTime
@@ -734,11 +746,12 @@ class CBF_RRTstrr(object):
         self.simObject.u_refs = list()
         self.simObject.cur_timestep = 0
         self.simObject.time_vec = [0]
-        self.simObject.add_agent(Agent(xy_v_nearest, radius=.4,theta=desired_theta ,instructs=u_ref, dynamics=Dyn.UNICYCLE))
+        # self.simObject.add_agent(Agent(xy_v_nearest, radius=.4,theta=desired_theta ,instructs=u_ref,dynamics=Dyn.UNICYCLE))
+        self.simObject.add_agent(Agent(xy_v_nearest, radius=.4,theta=desired_theta ,instructs=u_ref,dynamics=self.robotDynType))
         qTrajectory, uTrajectory, tTrajectory = self.simObject.initiate()  # TODO: incorporate \theta with the trajectory
-        qFinal = qTrajectory[0][:, -1]
+        qFinal = qTrajectory[0][:,-1]
         tFinal = tTrajectory[0][-1] + tInitial
-        return qFinal, tFinal, uTrajectory[0], qTrajectory[0], tTrajectory[0] + tInitial
+        return qFinal, tFinal, uTrajectory, qTrajectory[0], tTrajectory[0] + tInitial
 
     def SafeSteering2Goal(self,xy_agt,xy_goal):
         """
@@ -1337,7 +1350,8 @@ class CBF_RRTstrr(object):
                 vertexTrajectory = vertex.StateTraj
             else:
                 vertexTrajectory = vertex
-            plt.plot(vertexTrajectory[0, :], vertexTrajectory[1, :], markersize=.1, color=colorPath, mfc=[1., 0., 1.],
+            vertexTrajectory = np.asarray(vertexTrajectory)
+            plt.plot(vertexTrajectory[:, 0], vertexTrajectory[:, 1], markersize=.1, color=colorPath, mfc=[1., 0., 1.],
                      mec=[0.1, 0.1, 0.1], hold='on')
             self.TreePlot = plt
         else:
