@@ -164,7 +164,7 @@ class Simulation(object):
             p_cbf = 1.0
 
             h_val = obst.h.eval(agt)
-            lg_h = obst.h.grad(agt).T.dot(agt.get_q_dot() - obst_x_dot)[0][0]
+            lg_h = obst.h.grad(agt).dot((agt.get_q_dot() - obst_x_dot).T)
             constr = m.addConstr((lg_h)>=-k_cbf*h_val**p_cbf, name="CBF_{}".format(agt.id))
             attr = GRB.Attr.RHS
             m.update()
@@ -343,16 +343,17 @@ class Simulation(object):
                                 curTheta = agt.dyn.cur_theta
                                 # u_ref_t = make_column([u_ref[0, self.cur_timestep],u_ref[1, self.cur_timestep] -curTheta]) 
                                 u_ref_t = np.array([u_ref[0, self.cur_timestep],u_ref[1, self.cur_timestep] -curTheta])
-                        elif agt.dyn_enum is Dyn.UNICYCLE_EXT:
-                            curTheta = agt.dyn.cur_state[2]
-                            u_ref_t = make_column([u_ref[0, self.cur_timestep]-curTheta, u_ref[1, self.cur_timestep]])
+                        # elif agt.dyn_enum is Dyn.UNICYCLE_EXT:
+                        #     curTheta = agt.dyn.cur_state[2]
+                        #     u_ref_t = make_column([u_ref[0, self.cur_timestep]-curTheta, u_ref[1, self.cur_timestep]])
                         elif agt.dyn_enum is Dyn.SINGLE_INT: #TODO (SnglInt Exte)
-                            curTheta = agt.dyn.cur_state[1]
+                            # curTheta = agt.dyn.cur_state[1]
                             # u_ref_t = make_column([u_ref[0, self.cur_timestep] - curTheta, u_ref[1, self.cur_timestep]])
-                            u_ref_t = make_column(np.array([u_ref[0, self.cur_timestep],u_ref[1, self.cur_timestep]]))
+                            u_ref_t = u_ref[self.cur_timestep ,:]
+                            # u_ref_t = make_column(np.array([u_ref[0, self.cur_timestep],u_ref[1, self.cur_timestep]]))
 
 
-                        cost_func = (agt.u - u_ref_t).T.dot((agt.u - u_ref_t))[0][0] #
+                        cost_func = (agt.u - u_ref_t).T.dot((agt.u - u_ref_t)) #
                         m.setObjective(m.getObjective() + cost_func, GRB.MINIMIZE)
                         m.update()
 
