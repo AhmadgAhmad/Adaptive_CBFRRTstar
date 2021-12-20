@@ -51,7 +51,7 @@ class Obstacle(object):
         self.h.plot_levelsets(self.state, ax)
 
 class Sphere(Obstacle):
-    def __init__(self, loc, radius=1, dynamics=Dyn.SINGLE_INT, hollow=False, k_cbf=1.0):
+    def __init__(self, loc, radius=1, dynamics=Dyn.SINGLE_INT, hollow=False, k_cbf=2.0):
         self.loc = loc
         self.radius = radius
         if dynamics is Dyn.SINGLE_INT:
@@ -171,7 +171,7 @@ class Ellipsoid(Obstacle):
         self.angle = angle # DEGREES
         self.sign = -1 if hollow else 1
         self.h = Function(self.h_func, self.h_func_grad)
-        self.k_cbf = 1.0
+        self.k_cbf = 2.0
 
         #Computing the matrix of the ellipsoid:
         a_aug = self.a + ((0.1 * self.sign) * -1)
@@ -188,7 +188,7 @@ class Ellipsoid(Obstacle):
         self.M_ellip = M_ellip
 
     def h_func(self, a1):
-        return ((a1.state[0:2]-self.state[0:2]).transpose().dot(self.get_M(a1)).dot((a1.state[0:2]-self.state[0:2]))[0][0] - 1) * self.sign
+        return ((a1.state[0:2]-self.state[0:2]).dot(self.get_M(a1)).dot((a1.state[0:2]-self.state[0:2]).T) - 1) * self.sign
 
     def h_func_grad(self, a1):
         return (2*self.get_M(a1).dot((a1.state[0:2] - self.state[0:2]))) * self.sign
