@@ -72,7 +72,7 @@ class UnicycleExtended(Dynamics):
         #TODO: Let the user specify the initial theta (the 3rd state)
         self.params = Params()
         init_pos = make_column(init_pos)
-        self.cur_state = np.vstack([init_pos,0,0]) #Current q(t)
+        self.cur_state = np.array([init_pos,0,0]) #Current q(t)
 
         self.time_step = self.params.step_size
         self.cur_time = 0
@@ -81,7 +81,7 @@ class UnicycleExtended(Dynamics):
 
         # Trajectories attributes:
         self.trajectory = np.array(self.cur_state)
-        self.uTrajectory = np.vstack([0, 0])
+        self.uTrajectory = np.array([0, 0])
         self.rDegree = rDegree
 
 
@@ -320,6 +320,102 @@ class UnicycleDirect(Dynamics):
 
 
 
+# class Unicycle(Dynamics):
+#     """
+#     Single Integrator dynamics that are transformed to behave like unicycle dynamics
+#     x(t) = [x, y, theta]'
+
+#     .       | cos(theta)  0 |
+#     x(t) =  | sin(theta)  0 | | v |
+#             |     0       1 | | w |
+#     """
+#     def __init__(self, init_pos, theta=0, rDegree = 1):
+#         self.params = Params()
+#         l = self.params.l #TODO: This definition is limited to the use of a single integrator! (the problem is from here)
+        
+#         self.rot_mat = lambda theta: (np.array([[math.cos(theta), -l*math.sin(theta)],[math.sin(theta),l*math.cos(theta)]]))
+
+#         init_pos = make_column(init_pos)
+        
+#         self.cur_state = init_pos #+ l * np.array([[math.cos(theta)],[math.sin(theta)]])
+#         self.cur_theta = theta
+
+#         #TODO [FST_refactoring]
+#         self.cur_state = init_pos #+ l * np.array([[math.cos(theta)],[math.sin(theta)]])
+#         # self.cur_theta = theta
+
+#         self.cur_time = 0
+        
+#         self.time = np.array([0])
+#         #Trajectories attributes:
+#         self.trajectory      = np.array(self.cur_state)
+#         self.thetaTrajectory = np.array(self.cur_theta)
+#         self.uTrajectory     = np.vstack([0,0])
+#         self.qTrajectory     = np.vstack([self.cur_state,self.cur_theta])
+
+#         self.time_step = self.params.step_size
+#         self.rDegree = rDegree
+
+#     def get_state(self, t_idx=None):
+#         if t_idx is None:
+#             return self.cur_state
+#         else:
+#             return self.trajectory[:,t_idx]
+
+#     def get_x_dot(self, x, u,n=1):
+#         # return np.vstack(self.rot_mat(self.cur_theta).dot(np.array(u)))
+
+#         #6-4-2021:
+#         x_dot = 1* np.cos(self.cur_theta)
+#         y_dot = 1*np.sin(self.cur_theta)
+#         return np.vstack([x_dot, y_dot])
+
+
+#     def add_control(self, m, id):
+#         v_ctrlFlag = self.params.vInt_enabled
+#         w_ctrlFlag = self.params.wInt_enabled
+#         v_ub = self.params.v_upper_bound
+#         w_ub = self.params.w_upper_bound
+#         uVariables = []
+
+#         if v_ctrlFlag:
+#             v = m.addVar(lb=0, ub=v_ub, vtype=GRB.CONTINUOUS, name="vel{}".format(id))
+#             uVariables = np.append(uVariables,v)
+#         if w_ctrlFlag:
+#             w = m.addVar(lb=-w_ub, ub=w_ub, vtype=GRB.CONTINUOUS, name="omega{}".format(id))
+#             uVariables = np.append(uVariables,w)
+#         #uVariables.shape = [2,1]
+#         return uVariables
+
+#     def step(self, u,dt):
+
+#         # dt = self.params.step_size
+#         x0 = self.cur_state
+#         x_dot = self.get_x_dot(x0, u)
+#         x1 = x0 + x_dot * dt
+
+#         u = make_column(u)
+
+#         self.cur_state = x1
+#         self.cur_theta = self.cur_theta + dt * u[1,0]
+#         self.cur_time =self.cur_time+ dt
+
+#         self.time = np.append(self.time, self.cur_time)
+#         #update the trajectories:
+#         q = np.vstack([self.cur_state,self.cur_theta])
+#         self.trajectory      = np.append(self.trajectory, self.cur_state, axis=1)
+#         self.uTrajectory     = np.append(self.uTrajectory,u,axis=1)
+#         self.thetaTrajectory = np.append(self.thetaTrajectory,self.cur_state)
+#         self.qTrajectory     = np.append(self.qTrajectory,q,axis=1)
+
+#         return self.cur_state
+
+#     def get_u(self):
+#         curr_u = self.uTrajectory[:,-1]
+#         return curr_u
+
+#     def __str__(self):
+#         return 't={}\n'.format(self.cur_time) + np.array2string(self.cur_state)
 class Unicycle(Dynamics):
     """
     Single Integrator dynamics that are transformed to behave like unicycle dynamics
@@ -335,19 +431,18 @@ class Unicycle(Dynamics):
         
         self.rot_mat = lambda theta: (np.array([[math.cos(theta), -l*math.sin(theta)],[math.sin(theta),l*math.cos(theta)]]))
 
-        init_pos = make_column(init_pos)
+        # init_pos = make_column(init_pos)
         
-        self.cur_state = init_pos #+ l * np.array([[math.cos(theta)],[math.sin(theta)]])
+        self.cur_state = np.append(init_pos,theta) #+ l * np.array([[math.cos(theta)],[math.sin(theta)]])
+        # self.cur_state.dtype = np.float32
         self.cur_theta = theta
-
         self.cur_time = 0
         
-        self.time = np.array([0])
+        self.time = 0 
         #Trajectories attributes:
-        self.trajectory      = np.array(self.cur_state)
-        self.thetaTrajectory = np.array(self.cur_theta)
-        self.uTrajectory     = np.vstack([0,0])
-        self.qTrajectory     = np.vstack([self.cur_state,self.cur_theta])
+        self.trajectory      = [self.cur_state]
+        self.uTrajectory     = []
+        self.qTrajectory     = [self.cur_state]
 
         self.time_step = self.params.step_size
         self.rDegree = rDegree
@@ -356,15 +451,15 @@ class Unicycle(Dynamics):
         if t_idx is None:
             return self.cur_state
         else:
-            return self.trajectory[:,t_idx]
+            return self.trajectory[t_idx]
 
-    def get_x_dot(self, x, u,n=1):
+    def get_q_dot(self, x, u):
         # return np.vstack(self.rot_mat(self.cur_theta).dot(np.array(u)))
-
         #6-4-2021:
         x_dot = 1* np.cos(self.cur_theta)
         y_dot = 1*np.sin(self.cur_theta)
-        return np.vstack([x_dot, y_dot])
+        theta_dot =  u[1]
+        return np.array([x_dot,y_dot,theta_dot])
 
 
     def add_control(self, m, id):
@@ -378,41 +473,36 @@ class Unicycle(Dynamics):
             v = m.addVar(lb=0, ub=v_ub, vtype=GRB.CONTINUOUS, name="vel{}".format(id))
             uVariables = np.append(uVariables,v)
         if w_ctrlFlag:
-            w = m.addVar(lb=-w_ub, ub=w_ub, vtype=GRB.CONTINUOUS, name="omega{}".format(id))
+            w = m.addVar(lb=-100, ub=100, vtype=GRB.CONTINUOUS, name="omega{}".format(id))
             uVariables = np.append(uVariables,w)
         #uVariables.shape = [2,1]
         return uVariables
 
     def step(self, u,dt):
 
-        # dt = self.params.step_size
-        x0 = self.cur_state
-        x_dot = self.get_x_dot(x0, u)
-        x1 = x0 + x_dot * dt
+        if dt is None:
+            dt = self.params.step_size
+        q0 = self.cur_state
+        q_dot = self.get_q_dot(q0, u)
+        q1 = q0 + q_dot * dt
+        self.cur_state = q1
+        # self.cur_theta = self.cur_theta + dt * u[1,0]
+        self.cur_time = self.cur_time + dt
 
-        u = make_column(u)
+        self.time = np.append(self.time, self.cur_time) #Time trajectory TODO [speed Q]: could be a list to speed up the append
+        self.trajectory.append(self.cur_state) 
+        self.uTrajectory.append(u) 
+        self.qTrajectory     = self.trajectory
 
-        self.cur_state = x1
-        self.cur_theta = self.cur_theta + dt * u[1,0]
-        self.cur_time =self.cur_time+ dt
-
-        self.time = np.append(self.time, self.cur_time)
-        #update the trajectories:
-        q = np.vstack([self.cur_state,self.cur_theta])
-        self.trajectory      = np.append(self.trajectory, self.cur_state, axis=1)
-        self.uTrajectory     = np.append(self.uTrajectory,u,axis=1)
-        self.thetaTrajectory = np.append(self.thetaTrajectory,self.cur_state)
-        self.qTrajectory     = np.append(self.qTrajectory,q,axis=1)
-
+        
         return self.cur_state
 
     def get_u(self):
-        curr_u = self.uTrajectory[:,-1]
+        curr_u = self.uTrajectory[-1]
         return curr_u
 
     def __str__(self):
         return 't={}\n'.format(self.cur_time) + np.array2string(self.cur_state)
-
 
 class SingleIntegrator(Dynamics):
 
@@ -442,6 +532,10 @@ class SingleIntegrator(Dynamics):
         self.time = np.array([0])
         self.trajectory = np.array(self.init_state)
 
+        #The proposed list-like trajectories:
+        # self.trajectory      = [self.cur_state]
+        # self.uTrajectory     = []
+         
     def get_state(self, t_idx=None):
         if t_idx is None:
             return self.cur_state
@@ -460,10 +554,12 @@ class SingleIntegrator(Dynamics):
         m.addConstr(u.transpose().dot(u) <= v**2)
         return make_column(u)
 
-    def step(self, u):
+    def step(self, u,dt):
         x0 = self.cur_state
+        if dt is None:
+            dt = self.step_size
         x_dot = self.get_x_dot(x0, u)
-        x1 = x0 + x_dot * self.time_step
+        x1 = x0 + x_dot * dt
 
         self.cur_state = x1
         self.cur_time += self.time_step
