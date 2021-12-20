@@ -50,7 +50,7 @@ class Agent(object):
         self.done = False
         self.eps = self.params.epsilon if eps is None else eps
         self.steps = 0
-        self.k_cbf = 1.0
+        self.k_cbf = 2.0
 
         if type(instructs) is Goal:
             self.goal = instructs
@@ -174,9 +174,9 @@ class Agent(object):
                     mu = u[1]
                 u = np.vstack([w,mu])
             else:
-                u = [x[0].x for x in self.u]
+                u = [x.x for x in self.u]
                 u = np.array(u)
-                u.shape = (len(u), 1)
+                # u.shape = (len(u), 1)
 
         # if u== None:
         #     u = [x[0].x for x in self.u]
