@@ -178,26 +178,26 @@ class CBF_RRTstrr(object):
             # # #Cross:
             # obs10 = Ellipsoid([], [.6, .05], angle=45)
             # obs11 = Ellipsoid([], [.6, .05], angle=-45)
-            obs1 = Ellipsoid([4, 5], [1, 1], angle=-45)
-            obs2 = Ellipsoid([6, 0], [1, 1], angle=30)
-            obs3 = Ellipsoid([5, 4.7], [2, 2], angle=45)
-            obs4 = Ellipsoid([6, 7.6], [2,2], angle=45)
-            obs5 = Ellipsoid([10, 3], [2, 2], angle=-80)
-            obs6 = Ellipsoid([2, 7.5], [2, 2], angle=45)
+            obs1 = Ellipsoid(np.array([4, 5]),np.array([1, 1]), angle=-45)
+            obs2 = Ellipsoid(np.array([6, 0]), np.array([1, 1]), angle=30)
+            obs3 = Ellipsoid(np.array([5, 4.7]),np.array( [1, 1]), angle=45)
+            obs4 = Ellipsoid(np.array([6, 7.6]), np.array([1,1]), angle=45)
+            obs5 = Ellipsoid(np.array([10, 3]), np.array([1,1]), angle=-80)
+            obs6 = Ellipsoid(np.array([2, 7.5]), np.array([1,1]), angle=45)
             # obs6  = Sphere([8,3], radius=.5)
             # obs7 = Sphere([2, 4.5], radius=.5)
 
-            obs7 = Ellipsoid([8.5, 5], [.8, .8], angle=45)
-            obs8 = Ellipsoid([6.5, 1], [.6, .6], angle=-20)
-            # #Cross:
-            obs10 = Ellipsoid([], [.6, .6], angle=45)
-            obs11 = Ellipsoid([], [.6, .6], angle=-45)
+            # obs7 = Ellipsoid([8.5, 5], [.8, .8], angle=45)
+            # obs8 = Ellipsoid([6.5, 1], [.6, .6], angle=-20)
+            # # #Cross:
+            # obs10 = Ellipsoid([], [.6, .6], angle=45)
+            # obs11 = Ellipsoid([], [.6, .6], angle=-45)
 
             self.add_obstacleToWorld(obs1)
             self.add_obstacleToWorld(obs2)
-            # self.add_obstacleToWorld(obs3)
-            # self.add_obstacleToWorld(obs4)
-            # self.add_obstacleToWorld(obs5)
+            self.add_obstacleToWorld(obs3)
+            self.add_obstacleToWorld(obs4)
+            self.add_obstacleToWorld(obs5)
             # # #
             # self.add_obstacleToWorld(obs6)
             # self.add_obstacleToWorld(obs7)
@@ -807,11 +807,13 @@ class CBF_RRTstrr(object):
                     desired_theta = math.atan2(xy_v_pr[1] - xy_v_near[1] , xy_v_pr[0] - xy_v_near[0])
 
                     if mSteering>1:
-                        qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(v_near,desired_theta=desired_theta,m=mSteering) #TODO (cbfRRT*)
-                        steering_okFlag = isAcceptableSample(traj=qTrajectory, desiredSteps_num = mSteering)
-                        if np.linalg.norm(xy_v_pr - qFinal[0:2]) > .1:
+                        try: 
+                            qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(v_near,desired_theta=desired_theta,m=mSteering) #TODO[RSS] Exact safe steering 
+                            steering_okFlag = isAcceptableSample(traj=qTrajectory, desiredSteps_num = mSteering)
+                            if np.linalg.norm(xy_v_pr - qFinal[0:2]) > .1:
+                                steering_okFlag = False
+                        except:
                             steering_okFlag = False
-
                     else:
                         steering_okFlag = False
 
@@ -823,7 +825,7 @@ class CBF_RRTstrr(object):
                         norm_v_pr2v_near = self.Cost_v2v(v_near,v_new)  # This is the Euclidean distance we'll use arcLength afterwards; this is following the assumption
                         c_pr_heuristic = v_near.CostToCome + norm_v_pr2v_near
                         v_pr.CostToCome =  c_pr_heuristic
-                        if len(v_pr.StateTraj[0,:]) is 1:
+                        if len(v_pr.StateTraj) is 1:
                            v_pr
                         v_pr.ParentIndexID = v_near.indexID
                         self.updateVertex(v_pr)
@@ -879,12 +881,16 @@ class CBF_RRTstrr(object):
 
                 # SafeSteer from v_new to v_near (rewire v_near to a better parent vertex)
                 if mSteering > 1:
-                    qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(v_new,
-                                                                                              desired_theta=desired_theta,
-                                                                                              m=mSteering)
-                    steering_okFlag = isAcceptableSample(traj=qTrajectory, desiredSteps_num=mSteering) ###Major bug! steering could be ok though the final position is not.
-                    if np.linalg.norm(xy_v_near - qFinal[0:2]) > .1:
+                    try:
+                        qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(v_new,
+                                                                                                desired_theta=desired_theta,
+                                                                                                m=mSteering) # TODO[RSS] Exact safe steering
+                        steering_okFlag = isAcceptableSample(traj=qTrajectory, desiredSteps_num=mSteering) ###Major bug! steering could be ok though the final position is not.
+                        if np.linalg.norm(xy_v_near - qFinal[0:2]) > .1:
+                            steering_okFlag = False
+                    except:
                         steering_okFlag = False
+
                 else:
                     steering_okFlag = False
                 if True:
@@ -1033,7 +1039,8 @@ class CBF_RRTstrr(object):
             #TTTTTTTTTTTT
             # Adapt the sampling distribution based on the expanded trajectories to the goal are
             # ===== Generate Sample in the mission space and find the nearest vertex to it:
-            xy_sample = self.UpSampling_andSample(self.Vg_leaves,md=md,rho=rho,rce=rce,length=length,width=width,initTree_flag=initTree_flag)  # Until this moment this method returns a sample in the x-y space
+            xy_sample = self.UpSampling_andSample(self.Vg_leaves,md=md,rho=rho,\
+                rce=rce,length=length,width=width,initTree_flag=initTree_flag)  # Until this moment this method returns a sample in the x-y space
             v_nearest = self.Nearest(xy_sample)  # Return the indexID of the NN vertex
             xy_v_nearest = v_nearest.State[0:2]
             desired_theta = math.atan2( xy_sample[1]-xy_v_nearest[1],xy_sample[0]-xy_v_nearest[0])
@@ -1041,12 +1048,13 @@ class CBF_RRTstrr(object):
 
             # ===== Steering from xy_v_nearest towards xy_sample with M-steps (to be specified):
 
-            # TODO[RSS] $$$$$$$$$$$$$$$$$$$$$$$ No need for this safe-steering step, you just need to safe steer in chose parent. Given that choose parent procedure will return the nn vertex anyway. 
-            # hi
-            qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(v_nearest, desired_theta,m=ball_steeringSteps) #TODO (cbfRRTst)
+            # TODO[RSS] No need for this safe-steering step, you just need to safe steer in chose parent. Given that choose parent procedure will return the nn vertex anyway. 
+            qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = \
+                self.SafeSteering(v_nearest, desired_theta = desired_theta,m=ball_steeringSteps) #TODO (cbfRRTst)
             sample_okFlag = isAcceptableSample(traj = qTrajectory, desiredSteps_num = ball_steeringSteps)
-            if sample_okFlag:
-                v_new = Vertex(State=qFinal, StateTraj=qTrajectory, CtrlTraj=uTrajectory, timeTraj=tTrajectory,curTime=tFinal, indexID=i) #TODO (cbfRRT*)
+            if sample_okFlag: # Why we need it? 
+                v_new = Vertex(State=qFinal, StateTraj=np.asarray(qTrajectory), CtrlTraj=uTrajectory,\
+                     timeTraj=tTrajectory,curTime=tFinal, indexID=i) #TODO (cbfRRT*)
             else:
                 continue
             #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
@@ -1133,8 +1141,8 @@ class CBF_RRTstrr(object):
                             goal_tCost_list.append(vg_minCostToCome.curTime)
 
                         #Record the trajectory:
-                        Traj, _ = self.get_xythetaTraj(vg_minCostToCome)
-
+                        # Traj, _ = self.get_xythetaTraj(vg_minCostToCome)
+                        Traj = []
                         # Plotting the evolution of the costs:
                         if False:#actual_i % 100 == 0 and vg_minCostToCome.CostToCome is not None:
                             Traj, timeTraj = self.get_xythetaTraj(vg_minCostToCome)
@@ -1379,9 +1387,9 @@ class CBF_RRTstrr(object):
                 self.plot_vertex(vertex, EnPlotting=True)
                 if vertex.ParentIndexID is not None:
                     self.plot_pathToVertex(vertex, EnPlotting=True)
-                    w = vertex.StateTraj[0,0]-self.TreeT.VerticesSet[vertex.ParentIndexID].State[0]
-                    if w>.2:
-                        a = 2
+                    # w = vertex.StateTraj[0,0]-self.TreeT.VerticesSet[vertex.ParentIndexID].State[0]
+                    # if w>.2:
+                    #     a = 2
 
         # Plot the Path to the closest vertex to xy_point:
         if plot_pathFalg and v_nearest2point is not None:
@@ -1467,7 +1475,7 @@ def isAcceptableSample(traj,desiredSteps_num):
     :return: True if the number of the steps in of the trajectory are the same as the desiredSteps_num.
     """
     # return int(len(traj[0,:])-1)==int(desiredSteps_num)
-    return (int(len(traj[0, :])) <= int(desiredSteps_num+1)) and (int(len(traj[0, :])) >= int(desiredSteps_num-2))
+    return (int(len(traj)) <= int(desiredSteps_num+1)) and (int(len(traj)) >= int(desiredSteps_num-2))
 def main(worldChar='Cltrd_world_big'):
     Params('configs.ini')
 
