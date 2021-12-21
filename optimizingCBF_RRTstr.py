@@ -708,7 +708,7 @@ class CBF_RRTstrr(object):
     # ############################## SafeSteering Algorithm 2: #############################################################:
 
     # TODO: creat ba a safeSteeringExact when performing rewiring 
-    def SafeSteering(self, v_nearest, desired_theta, m=10 ,edge_length = 1 ):
+    def SafeSteering(self, v_nearest, desired_theta = None, desired_pos = None , m=10 ,edge_length = 1 ):
         """
         Take the desired theta to steer to (desired_theta); the vertex to steer from (v_nearest);
         the mission space (embed in simObject); and the current tree (embed in self). It will steer with
@@ -722,15 +722,22 @@ class CBF_RRTstrr(object):
         if m<1:
             m=1
         
-        #TODO[Single integrator]
-        if self.robotDynType is Dyn.SINGLE_INT:
-            u1_ref = np.linspace(edge_length*math.cos(desired_theta),edge_length*math.cos(desired_theta), m)
-            u2_ref = np.linspace(edge_length*math.sin(desired_theta),edge_length*math.sin(desired_theta), m)
-            u_ref = np.array([u1_ref,u2_ref]).T
-        else: 
-            vRef = np.linspace(0.5, 0.5, m)  # Assume we're working with the unicycle dynamics
-            wRef = np.linspace(desired_theta, desired_theta, m)
-            u_ref = np.vstack([vRef, wRef]) #TODO (slow)
+        # Check if the instruction is to safe steer towards a desired direction [CBF-QP] or to exactly steer to a 
+        # desired position [CLF-CBF-QP]: 
+        if desired_pos is None: #Safe steer [CBF-QP] 
+            if self.robotDynType is Dyn.SINGLE_INT:
+                u1_ref = np.linspace(edge_length*math.cos(desired_theta),edge_length*math.cos(desired_theta), m)
+                u2_ref = np.linspace(edge_length*math.sin(desired_theta),edge_length*math.sin(desired_theta), m)
+                u_ref = np.array([u1_ref,u2_ref]).T
+            else: 
+                vRef = np.linspace(0.5, 0.5, m)  # Assume we're working with the unicycle dynamics
+                wRef = np.linspace(desired_theta, desired_theta, m)
+                u_ref = np.vstack([vRef, wRef]) #TODO (slow)
+            instr = u_ref
+        elif desired_theta is None: # Exact Safe steer [CLF-CBF-QP]
+            instr = Goal(desired_pos)
+        else:
+            raise Exception('Control instruction [u_ref or goal] was not provided')
 
         # if len(wRef) is 0:
         #     desired_theta
@@ -746,10 +753,10 @@ class CBF_RRTstrr(object):
         self.simObject.u_refs = list()
         self.simObject.cur_timestep = 0
         self.simObject.time_vec = [0]
-        # goal = Goal([2,-.51])
+        # 
         # self.simObject.add_agent(Agent(xy_v_nearest, radius=.4,theta=desired_theta ,instructs=u_ref,dynamics=Dyn.UNICYCLE))
-        self.simObject.add_agent(Agent(xy_v_nearest, radius=.4,theta=desired_theta ,instructs=u_ref,dynamics=self.robotDynType))
-        # self.simObject.add_agent(Agent(xy_v_nearest, radius=.4,theta=desired_theta ,instructs=goal,dynamics=self.robotDynType))
+        # self.simObject.add_agent(Agent(xy_v_nearest, radius=.4,theta=desired_theta ,instructs=u_ref,dynamics=self.robotDynType))
+        self.simObject.add_agent(Agent(xy_v_nearest, radius=.4,theta=desired_theta ,instructs=instr,dynamics=self.robotDynType))
         qTrajectory, uTrajectory, tTrajectory = self.simObject.initiate()  # TODO: incorporate \theta with the trajectory
         qFinal = qTrajectory[0][-1]
         tFinal = tTrajectory[0][-1] + tInitial
