@@ -56,9 +56,9 @@ class Goal(object):
     def add_clf(self, m, agt):
         params = Params()
         if type(agt.dyn) is SingleIntegrator:
-            H = np.identity(len(agt.u)) * 10
-            p = 20
-            gamma = .25
+            H = np.identity(len(agt.u)) * .25
+            p = .25
+            gamma = 4
         elif type(agt.dyn) is Unicycle:    
             # TODO: MAKE PARAMS TAKE A PARAM FILE. USE CONFIG. SEPARATE PARAMS
             vel_penalty =  params.vel_penalty #2 # was 10
