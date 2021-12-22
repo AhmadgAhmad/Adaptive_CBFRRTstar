@@ -85,7 +85,7 @@ class CBF_RRTstrr(object):
         self.kde_eliteSamples = []
         self.KDE_fitSamples = None
         self.KDE_pre_gridProbs = None
-        self.kde_enabled = False
+        self.kde_enabled = True
         #---gmm
         self.gmmOpt_flag = False
 
@@ -449,7 +449,7 @@ class CBF_RRTstrr(object):
         :param N_qSamples: A threshold indicates the number of samples that are sufficient enough to be exploited (TODO (Doc): How to decide this number)
         :return: None: if the number of points of the discretized trajectories < N_qSamples, (x,y) samples from the estimated distribution
         """
-        if len(Vg_leaves)>=(self.adapIter*30): #The acceptable number of trajectories to adapat upon
+        if len(Vg_leaves)>=(self.adapIter*40): #The acceptable number of trajectories to adapat upon
             frakX = []
             #Find the elite trajectoies then discretize them and use their samples as the elite samples:
             Vg_leaves_costList = [vg.CostToCome for vg in Vg_leaves]
@@ -463,20 +463,21 @@ class CBF_RRTstrr(object):
             for vg in elite_Vg_leaves:
                 vgCostToCome = vg.CostToCome
                 #Concatnating the trajectory:
-                traj2vg = vg.StateTraj[0:2,:]
+                traj2vg = np.asarray(vg.StateTraj)
                 indexID_anc = vg.ParentIndexID
                 while indexID_anc is not None:
                     if indexID_anc is not 0:
-                        ParentTraj = self.TreeT.VerticesSet[indexID_anc].StateTraj[0:2, :]
-                        traj2vg = np.concatenate((ParentTraj,traj2vg),axis=1)
+                        ParentTraj = self.TreeT.VerticesSet[indexID_anc].StateTraj
+                        traj2vg = np.concatenate((ParentTraj,traj2vg),axis=0)
                     indexID_anc = self.TreeT.VerticesSet[indexID_anc].ParentIndexID
 
                 # Backtrack the path from vg to v0; extract the sample at certain increments of the time:
                 t0_bktrTraj = timeit.default_timer()
-                tStep_init = int(h/self.params.step_size)
-                tStep = tStep_init
-                while tStep < len(traj2vg[0,:]):
-                    pi_q_tStep = traj2vg[:,tStep]
+                tStep_init1 = int(h/self.params.step_size)
+                tStep_init = 2
+                tStep = tStep_init1+5
+                while tStep < len(traj2vg[:,1]):
+                    pi_q_tStep = traj2vg[tStep,:]
                     elite_cddtSample = [pi_q_tStep,vgCostToCome] #This tuple contains the actual sample pi_q_tStep and the CostToCome to the goal of the corresponding trajectory
                     frakX.append(elite_cddtSample)
                     tStep = tStep + tStep_init
@@ -516,7 +517,7 @@ class CBF_RRTstrr(object):
         costs_arr = frakXarr[:,1]
         elite_samplesTemp = frakXarr[:,0] #A subset of the samples that are below the elite quantile
         elite_samples = [elite_samplesTemp[i] for i in range(len(elite_samplesTemp))]
-        elite_samples_arr = np.array(elite_samples)
+        elite_samples_arr = np.asarray(elite_samples)
         elite_costs = costs_arr
 
         #random point from the estimated distribution:
@@ -526,11 +527,12 @@ class CBF_RRTstrr(object):
             # this weight is the probability of the Sampling Importance Resampling (SIR) of the non-parametric generlized
             # CE method. See Chapter X in the Thesis.
 
-            sumCost_crsTrajSmpl = sum(elite_costs)
-            w_arr = 1 - elite_costs/sumCost_crsTrajSmpl
-            w_arrNorm = w_arr/sum(w_arr)
+            # sumCost_crsTrajSmpl = sum(elite_costs)
+            # w_arr = 1 - elite_costs/sumCost_crsTrajSmpl
+            # w_arrNorm = w_arr/sum(w_arr)
             kde = KernelDensity(kernel='gaussian', bandwidth=.85)
-            kde.fit(elite_samples_arr,sample_weight=w_arrNorm)
+            # kde.fit(elite_samples_arr,sample_weight=w_arrNorm)
+            kde.fit(elite_samples_arr)
             self.adapIter += 1
             xySample = kde.sample()
 
@@ -687,7 +689,7 @@ class CBF_RRTstrr(object):
         tempTree = BallTree(xyCoorVertices)
 
         # The index of the NN vertex (it is different than indexID of the vertex)
-        nn_currIndex, nn_currDist = tempTree.query_radius(xyVertex.reshape([1, 2]), r=b_raduis, return_distance=True,sort_results=True)  # TODO (debug) prevent the vertex to be neighbor to itself
+        nn_currIndex, nn_currDist = tempTree.query_radius(xyVertex.reshape([1, 2]), r=b_raduis+0.1, return_distance=True,sort_results=True)  # TODO (debug) prevent the vertex to be neighbor to itself
 
         nn_currIndex = nn_currIndex[0].astype(int)
         if not self.params.ordDict_enabled:
@@ -760,7 +762,8 @@ class CBF_RRTstrr(object):
         qTrajectory, uTrajectory, tTrajectory = self.simObject.initiate()  # TODO: incorporate \theta with the trajectory
         qFinal = qTrajectory[0][-1]
         tFinal = tTrajectory[0][-1] + tInitial
-        return qFinal, tFinal, uTrajectory, qTrajectory[0], tTrajectory[0] + tInitial
+        qTrajectory = qTrajectory[0][1:]
+        return qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory[0][1:] + tInitial
 
     def SafeSteering2Goal(self,xy_agt,xy_goal):
         """
@@ -808,8 +811,9 @@ class CBF_RRTstrr(object):
 
                     if mSteering>1:
                         try: 
-                            qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(v_near,desired_theta=desired_theta,m=mSteering) #TODO[RSS] Exact safe steering 
-                            steering_okFlag = isAcceptableSample(traj=qTrajectory, desiredSteps_num = mSteering)
+                            # qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(v_near,desired_pos=[xy_v_pr[0],xy_v_pr[1]],m=mSteering) #TODO[RSS] Exact safe steering 
+                            qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(v_near,desired_theta=desired_theta,m=int(mSteering)+1)
+                            steering_okFlag = isAcceptableSample(traj=qTrajectory, desiredSteps_num = int(mSteering)+1)
                             if np.linalg.norm(xy_v_pr - qFinal[0:2]) > .1:
                                 steering_okFlag = False
                         except:
@@ -883,9 +887,12 @@ class CBF_RRTstrr(object):
                 if mSteering > 1:
                     try:
                         qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(v_new,
-                                                                                                desired_theta=desired_theta,
+                                                                                                desired_pos=[xy_v_near[0],xy_v_near[1]],
                                                                                                 m=mSteering) # TODO[RSS] Exact safe steering
-                        steering_okFlag = isAcceptableSample(traj=qTrajectory, desiredSteps_num=mSteering) ###Major bug! steering could be ok though the final position is not.
+                        # qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(v_new,
+                        #                                                                         desired_theta=desired_theta,
+                        #                                                                         m=int(mSteering)+1)
+                        steering_okFlag = isAcceptableSample(traj=qTrajectory, desiredSteps_num=int(mSteering)+1) ###Major bug! steering could be ok though the final position is not.
                         if np.linalg.norm(xy_v_near - qFinal[0:2]) > .1:
                             steering_okFlag = False
                     except:
@@ -1062,12 +1069,13 @@ class CBF_RRTstrr(object):
 
             
             #Since we will have more artificial samples to adapt the sampling distribution:
-            if len(v_new.StateTraj[0,:]) is 1:
+            if len(v_new.StateTraj[:,0]) is 1:
                 actual_i = actual_i + 1
             actual_i = actual_i + 1
             self.addVertex(v_new)
             # ===== Check the near vertices in the tree within a ball of the vertex:
             gamma = self.params.gamma
+            gamma = 8
             #Experemntally for edge length =1
             cardV = len(self.TreeT.VerticesSet)                  # Complexity: O(1)
             vb_radi = gamma * math.sqrt(math.log(cardV) / cardV) #gamma * math.log(cardV)
@@ -1080,7 +1088,7 @@ class CBF_RRTstrr(object):
 
             #RRT
             Nnear_vSet = self.Near(Vertex=v_new,b_raduis=b_radi)  # TODO: (debug) prevent the vertex to be neighbor to itself
-
+            Nnear_vSet = Nnear_vSet[1:]
 
             # ===== Choose the best parent for v_new from the near vertices:
             #RRT
@@ -1187,7 +1195,7 @@ class CBF_RRTstrr(object):
                     vg_minCostToCome = None
 
                 # Plotting the expansion tree
-                if actual_i % 50 == 0:  # actual_i == 10 or actual_i == 20 or actual_i==100 or actual_i==150 or actual_i==200 or actual_i==1000:
+                if actual_i % 100 == 0:  # actual_i == 10 or actual_i == 20 or actual_i==100 or actual_i==150 or actual_i==200 or actual_i==1000:
                     t1 = timeit.default_timer()
                     xy_plot = self.xy_goal
                     if i == 706:
@@ -1236,7 +1244,7 @@ class CBF_RRTstrr(object):
                          CBF_RRT_strr_obj=self,
                          adapDist_iter=None, enFlag=False)
 
-            if i>1000:
+            if i>2000:
                 print("done")
                 break
             print("Iter:", i)
@@ -1257,12 +1265,15 @@ class CBF_RRTstrr(object):
                 mSteering2goal = np.linalg.norm(xy_goal-xy_v_new) / self.params.step_size
 
                 theta_goal = math.atan2(xy_goal[1] - xy_v_new[1], xy_goal[0] - xy_v_new[0])
+                # qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(v_new,
+                #                                                                           desired_theta=theta_goal,
+                #                                                                           m=int(mSteering2goal)+1)
                 qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(v_new,
-                                                                                          desired_theta=theta_goal,
-                                                                                          m=mSteering2goal)
+                                                                                          desired_pos=[xy_goal[0],xy_goal[1]],
+                                                                                          m=int(mSteering2goal)+1)
                 if mSteering2goal<1:
                     a = 1
-                if len(qTrajectory[0,:]) != len(tTrajectory):
+                if len(qTrajectory) != len(tTrajectory):
                     a = 1
 
                 #Check how if we ended up away from the goal:
@@ -1482,7 +1493,7 @@ def main(worldChar='Cltrd_world_big'):
     a = list(np.linspace(29, 49, 21))
     for j in [0]:
         for iRun in [7]:
-            runSeed = int(iRun+1)
+            runSeed = int(iRun+2)
             np.random.seed(runSeed)
             random.seed(runSeed)
             sys.setrecursionlimit(2000)
@@ -1515,10 +1526,10 @@ def main(worldChar='Cltrd_world_big'):
             #File naming stuff:
 
             CBF_RRT_object = CBF_RRTstrr(suffix=worldChar,q_init=q_init,xy_goal=xy_goal,eps_g=.8)
-            if j == 0:
-                CBF_RRT_object.kde_enabled = False
-            else:
-                CBF_RRT_object.kde_enabled = False
+            # if j == 0:
+            #     CBF_RRT_object.kde_enabled = False
+            # else:
+            #     CBF_RRT_object.kde_enabled = False
 
             if CBF_RRT_object.kde_enabled or CBF_RRT_object.params.CE_enabled:
                 prefix = 'adap'
@@ -1545,18 +1556,18 @@ if __name__ == '__main__':
     end_time = time.time()
     print("Total runtime:", end_time - start_time)
     # import cProfile
-    #
-    # cProfile.run('main()', "output.dat")
-    #
+    
+    # cProfile.run('main()', "output3.dat")
+    
     # import pstats
     # # from pstats import SortKey
-    #
+    
     # # Defined based on the time:
-    # with open("output_time.txt", "w") as f:
-    #     p = pstats.Stats("output.dat", stream=f)
+    # with open("output_time2.txt", "w") as f:
+    #     p = pstats.Stats("output3.dat", stream=f)
     #     p.sort_stats("time").print_stats()
-    #
+    
     # # Defined based on the calls:
-    # with open("output_calls.txt", "w") as f:
-    #     p = pstats.Stats("output.dat", stream=f)
+    # with open("output_calls2.txt", "w") as f:
+    #     p = pstats.Stats("output3.dat", stream=f)
     #     p.sort_stats("calls").print_stats()
