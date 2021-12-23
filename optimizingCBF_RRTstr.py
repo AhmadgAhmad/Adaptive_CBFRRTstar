@@ -581,7 +581,7 @@ class CBF_RRTstrr(object):
             # Find the KL divergence the current samples and the previous ones:
             if self.adapIter > 2:
                 KL_div = self.KLdiv(grid_probs)
-                if KL_div < .01:
+                if KL_div < .05:
                     self.kdeOpt_flag = True
                 self.KDE_fitSamples = kde #This kde object will be used to sample form whn the optimal sampling distribution has been reached
 
