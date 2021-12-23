@@ -134,16 +134,16 @@ class CBF_RRTstrr(object):
         self.TreeT = TreeT
         self.Vg_leaves = []
         if worldChar is 'Cltrd_world':
-            obs1 = Ellipsoid([3,3], [.6, .1], angle=-45)
-            obs2 = Ellipsoid([3,2.5], [.6, .1], angle=30)
-            obs3 = Ellipsoid([4,4], [.6, .1], angle=-60)
-            obs4 = Ellipsoid([4, 4.5], [.6, .1], angle=60)
-            obs5 = Ellipsoid([6,3], [.6, .1], angle=-80)
-            obs6 = Ellipsoid([4,6], [.6, .1], angle=-45)
+            obs1 = Ellipsoid(np.array([3,3]), np.array([.6, .1]), angle=-45)
+            obs2 = Ellipsoid(np.array([3,2.5]), np.array([.6, .1]), angle=30)
+            obs3 = Ellipsoid(np.array([4,4]), np.array([.6, .1]), angle=-60)
+            obs4 = Ellipsoid(np.array([4, 4.5]), np.array([.6, .1]), angle=60)
+            obs5 = Ellipsoid(np.array([6,3]), np.array([.6, .1]), angle=-80)
+            obs6 = Ellipsoid(np.array([4,6]), np.array([.6, .1]), angle=-45)
             # obs6  = Sphere([8,3], radius=.5)
             # obs7 = Sphere([2, 4.5], radius=.5)
 
-            obs7 = Ellipsoid([4.5, 5], [.6, .1], angle=45)
+            obs7 = Ellipsoid(np.array([4.5, 5]), np.array([.6, .1]), angle=45)
             # obs8 = Ellipsoid([], [.6, .05], angle=0)
             # obs9 = Ellipsoid([], [.6, .05], angle=-45)
             # #Cross:
@@ -319,24 +319,57 @@ class CBF_RRTstrr(object):
             self.add_obstacleToWorld(obs12)
             self.add_obstacleToWorld(obs13)
             self.add_obstacleToWorld(obs14)
+        if worldChar is 'RSS_paper': 
+            # This world to demonstrad a carfully designed world where multiple paths with have identical cost
+
+            obs1 = Ellipsoid(np.array([9, 3]),np.array([1.5,1.5]),angle=0)
+            obs2 = Ellipsoid(np.array([0, 8]), np.array([1.5, 1.5]), angle=0)
+            obs3 = Ellipsoid(np.array([9, 16.5]), np.array([1.5, 1.5]), angle=0)
+            obs4 = Ellipsoid(np.array([15, 5]), np.array([1.5, 1.5]), angle=0)
+            obs5 = Ellipsoid(np.array([5, 5]), np.array([1.1, 1.1]), angle=0)
+
+            # obs6 = Ellipsoid(np.array([13, 19.4]), np.array([1.5, 1.5]), angle=0)
+            obs7 = Ellipsoid(np.array([10, 10]), np.array([1.8, .4]), angle=60)
+            obs8 = Ellipsoid(np.array([10, 10]), np.array([1.8, .4]), angle=-30)
+
+            # obs9 = Ellipsoid(np.array([13, 5.6]), np.array([1.5, 1.5]), angle=0)
+            # obs10 = Ellipsoid(np.array([17, 22.5]), np.array([1.5, 1.5]), angle=0)
+            # obs11= Ellipsoid(np.array([17, 17.5]),np.array([1.5, 1.5]), angle=0)
+            # obs13 = Ellipsoid(np.array([17, 7.5]), np.array([1.5, 1.5]), angle=0)
+            # obs14= Ellipsoid(np.array([17, 2.5]), np.array([1.5, 1.5]), angle=0)
+
+            self.add_obstacleToWorld(obs1)
+            self.add_obstacleToWorld(obs2)
+            self.add_obstacleToWorld(obs3)
+            self.add_obstacleToWorld(obs4)
+            self.add_obstacleToWorld(obs5)
+            # self.add_obstacleToWorld(obs6)
+            self.add_obstacleToWorld(obs7)
+            self.add_obstacleToWorld(obs8)
+            # self.add_obstacleToWorld(obs9)
+            # self.add_obstacleToWorld(obs10)
+            # self.add_obstacleToWorld(obs11)
+            # # self.add_obstacleToWorld(obs12)
+            # self.add_obstacleToWorld(obs13)
+            # self.add_obstacleToWorld(obs14)
         if worldChar is 'CircCross_world':
             # This world to demonstrad a carfully designed world where multiple paths with have identical cost
 
-            obs1 = Ellipsoid([9, 21.5],[1.5,1.5],angle=0)
-            obs2 = Ellipsoid([9, 17], [1.5, 1.5], angle=0)
-            obs3 = Ellipsoid([9, 12.5], [1.5, 1.5], angle=0)
-            obs4 = Ellipsoid([9, 8], [1.5, 1.5], angle=0)
-            obs5 = Ellipsoid([9, 3.5], [1.5, 1.5], angle=0)
+            obs1 = Ellipsoid(np.array([9, 21.5]),np.array([1.5,1.5]),angle=0)
+            obs2 = Ellipsoid(np.array([9, 17]), np.array([1.5, 1.5]), angle=0)
+            obs3 = Ellipsoid(np.array([9, 12.5]), np.array([1.5, 1.5]), angle=0)
+            obs4 = Ellipsoid(np.array([9, 8]), np.array([1.5, 1.5]), angle=0)
+            obs5 = Ellipsoid(np.array([9, 3.5]), np.array([1.5, 1.5]), angle=0)
 
-            obs6 = Ellipsoid([13, 19.4], [1.5, 1.5], angle=0)
-            obs7 = Ellipsoid([14.8, 11.4], [2, .4], angle=45)
-            obs8 = Ellipsoid([14.8, 13.2], [2, .4], angle=-45)
+            obs6 = Ellipsoid(np.array([13, 19.4]), np.array([1.5, 1.5]), angle=0)
+            obs7 = Ellipsoid(np.array([14.8, 11.4]), np.array([2, .4]), angle=45)
+            obs8 = Ellipsoid(np.array([14.8, 13.2]), np.array([2, .4]), angle=-45)
 
-            obs9 = Ellipsoid([13, 5.6], [1.5, 1.5], angle=0)
-            obs10 = Ellipsoid([17, 22.5], [1.5, 1.5], angle=0)
-            obs11= Ellipsoid([17, 17.5], [1.5, 1.5], angle=0)
-            obs13 = Ellipsoid([17, 7.5], [1.5, 1.5], angle=0)
-            obs14= Ellipsoid([17, 2.5], [1.5, 1.5], angle=0)
+            obs9 = Ellipsoid(np.array([13, 5.6]), np.array([1.5, 1.5]), angle=0)
+            obs10 = Ellipsoid(np.array([17, 22.5]), np.array([1.5, 1.5]), angle=0)
+            obs11= Ellipsoid(np.array([17, 17.5]),np.array([1.5, 1.5]), angle=0)
+            obs13 = Ellipsoid(np.array([17, 7.5]), np.array([1.5, 1.5]), angle=0)
+            obs14= Ellipsoid(np.array([17, 2.5]), np.array([1.5, 1.5]), angle=0)
 
             self.add_obstacleToWorld(obs1)
             self.add_obstacleToWorld(obs2)
@@ -449,7 +482,7 @@ class CBF_RRTstrr(object):
         :param N_qSamples: A threshold indicates the number of samples that are sufficient enough to be exploited (TODO (Doc): How to decide this number)
         :return: None: if the number of points of the discretized trajectories < N_qSamples, (x,y) samples from the estimated distribution
         """
-        if len(Vg_leaves)>=(self.adapIter*40): #The acceptable number of trajectories to adapat upon
+        if len(Vg_leaves)>=(self.adapIter*30): #The acceptable number of trajectories to adapat upon
             frakX = []
             #Find the elite trajectoies then discretize them and use their samples as the elite samples:
             Vg_leaves_costList = [vg.CostToCome for vg in Vg_leaves]
@@ -475,12 +508,13 @@ class CBF_RRTstrr(object):
                 t0_bktrTraj = timeit.default_timer()
                 tStep_init1 = int(h/self.params.step_size)
                 tStep_init = 2
-                tStep = tStep_init1+5
+                tStep = 10
+                tStep_temp = tStep_init1+5
                 while tStep < len(traj2vg[:,1]):
                     pi_q_tStep = traj2vg[tStep,:]
                     elite_cddtSample = [pi_q_tStep,vgCostToCome] #This tuple contains the actual sample pi_q_tStep and the CostToCome to the goal of the corresponding trajectory
                     frakX.append(elite_cddtSample)
-                    tStep = tStep + tStep_init
+                    tStep = tStep + tStep_temp
                 t1_bktrTraj = timeit.default_timer()
                 T_bktrTraj = t1_bktrTraj-t0_bktrTraj
             if self.adapIter == 1:
@@ -537,8 +571,8 @@ class CBF_RRTstrr(object):
             xySample = kde.sample()
 
         if self.kde_enabled:#self.params.kde_enabled:
-            x_gridv = np.linspace(-1, 11, 30)
-            y_gridv = np.linspace(-1, 11, 30)
+            x_gridv = np.linspace(-2, 18, 40)
+            y_gridv = np.linspace(-2, 18, 40)
             Xxgrid, Xygrid = np.meshgrid(x_gridv, y_gridv)
             XYgrid_mtx = np.array([Xxgrid.ravel(), Xygrid.ravel()]).T
             #Get the probabilities
@@ -547,7 +581,7 @@ class CBF_RRTstrr(object):
             # Find the KL divergence the current samples and the previous ones:
             if self.adapIter > 2:
                 KL_div = self.KLdiv(grid_probs)
-                if KL_div < .1:
+                if KL_div < .01:
                     self.kdeOpt_flag = True
                 self.KDE_fitSamples = kde #This kde object will be used to sample form whn the optimal sampling distribution has been reached
 
@@ -1265,12 +1299,12 @@ class CBF_RRTstrr(object):
                 mSteering2goal = np.linalg.norm(xy_goal-xy_v_new) / self.params.step_size
 
                 theta_goal = math.atan2(xy_goal[1] - xy_v_new[1], xy_goal[0] - xy_v_new[0])
-                # qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(v_new,
-                #                                                                           desired_theta=theta_goal,
-                #                                                                           m=int(mSteering2goal)+1)
                 qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(v_new,
-                                                                                          desired_pos=[xy_goal[0],xy_goal[1]],
+                                                                                          desired_theta=theta_goal,
                                                                                           m=int(mSteering2goal)+1)
+                # qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(v_new,
+                #                                                                           desired_pos=[xy_goal[0],xy_goal[1]],
+                #                                                                           m=int(mSteering2goal)+1)
                 if mSteering2goal<1:
                     a = 1
                 if len(qTrajectory) != len(tTrajectory):
@@ -1522,6 +1556,9 @@ def main(worldChar='Cltrd_world_big'):
             elif worldChar is 'CircCross_world':
                 q_init = np.array([2, 12.5, 0])
                 xy_goal = np.array([23, 12.5])
+            elif worldChar is 'RSS_paper':
+                q_init = np.array([0, 2, 0])
+                xy_goal = np.array([15, 13])
 
             #File naming stuff:
 
@@ -1550,7 +1587,7 @@ def main(worldChar='Cltrd_world_big'):
 
 if __name__ == '__main__':
     start_time = time.time()
-    worldChars = ['Cltrd_world_big']# ['Cltrd_world_big', 'nPsgs_world']
+    worldChars = ['RSS_paper']# ['Cltrd_world_big', 'nPsgs_world']
     for worldChar in worldChars:
         main(worldChar)
     end_time = time.time()
