@@ -329,8 +329,8 @@ class CBF_RRTstrr(object):
             obs5 = Ellipsoid(np.array([5, 5]), np.array([1.1, 1.1]), angle=0)
 
             # obs6 = Ellipsoid(np.array([13, 19.4]), np.array([1.5, 1.5]), angle=0)
-            obs7 = Ellipsoid(np.array([10, 10]), np.array([1.8, .4]), angle=60)
-            obs8 = Ellipsoid(np.array([10, 10]), np.array([1.8, .4]), angle=-30)
+            obs7 = Ellipsoid(np.array([10, 9.5]), np.array([1.8, .4]), angle=60)
+            obs8 = Ellipsoid(np.array([10, 9.5]), np.array([1.8, .4]), angle=-30)
 
             # obs9 = Ellipsoid(np.array([13, 5.6]), np.array([1.5, 1.5]), angle=0)
             # obs10 = Ellipsoid(np.array([17, 22.5]), np.array([1.5, 1.5]), angle=0)
@@ -1557,7 +1557,7 @@ def main(worldChar='Cltrd_world_big'):
                 q_init = np.array([2, 12.5, 0])
                 xy_goal = np.array([23, 12.5])
             elif worldChar is 'RSS_paper':
-                q_init = np.array([0, 2, 0])
+                q_init = np.array([0, 3, 0])
                 xy_goal = np.array([15, 13])
 
             #File naming stuff:
