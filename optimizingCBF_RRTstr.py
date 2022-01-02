@@ -1052,8 +1052,8 @@ class CBF_RRTstrr(object):
         actual_i = 1
         goalTrajCost = []
 
-        if not initTree_flag:
-            self.initialize_graphPlot()
+        # if not initTree_flag:
+        #     self.initialize_graphPlot()
         xy_goal = self.xy_goal
 
         #Extracting the CE parameters:
@@ -1186,42 +1186,45 @@ class CBF_RRTstrr(object):
                         # Traj, _ = self.get_xythetaTraj(vg_minCostToCome)
                         Traj = []
                         # Plotting the evolution of the costs:
-                        if False:#actual_i % 100 == 0 and vg_minCostToCome.CostToCome is not None:
-                            Traj, timeTraj = self.get_xythetaTraj(vg_minCostToCome)
-                            timeTraj = np.linspace(0, len(Traj[0, :]) * self.params.step_size, len(Traj[0, :]))
-                            # plt.plot(timeTraj, Traj[0, :])
-                            # plt.show()
-                            # plt.plot(timeTraj, Traj[1, :])
-                            # plt.show()
-                            # plt.plot(timeTraj, Traj[2, :])
-                            # plt.show()
+                        try:
+                            if False:#actual_i % 50 == 0 and vg_minCostToCome.CostToCome is not None:
+                                Traj, timeTraj = self.get_xythetaTraj(vg_minCostToCome)
+                                timeTraj = np.linspace(0, len(Traj[0, :]) * self.params.step_size, len(Traj[0, :]))
+                                # plt.plot(timeTraj, Traj[0, :])
+                                # plt.show()
+                                # plt.plot(timeTraj, Traj[1, :])
+                                # plt.show()
+                                # plt.plot(timeTraj, Traj[2, :])
+                                # plt.show()
 
-                            self.initialize_graphPlot()
-                            plt.plot(Traj[0, :], Traj[1, :])
-                            plt.show()
+                                # self.initialize_graphPlot()
+                                # plt.plot(Traj[0, :], Traj[1, :])
+                                # plt.show()
 
-                            plt.plot(np.linspace(1, len(goal_tCost_list), len(goal_tCost_list)), goal_tCost_list,
-                                     label="Time Cost", hold='on')
-                            plt.xlabel("number of vertexes ", fontsize=15)
-                            plt.ylabel("time cost", fontsize=15)
-                            plt.xticks(size=10)
-                            plt.yticks(size=10)
-                            plt.grid(True)
-                            plt.show()
+                                # plt.plot(np.linspace(1, len(goal_tCost_list), len(goal_tCost_list)), goal_tCost_list,
+                                #         label="Time Cost", hold='on')
+                                # plt.xlabel("number of vertexes ", fontsize=15)
+                                # plt.ylabel("time cost", fontsize=15)
+                                # plt.xticks(size=10)
+                                # plt.yticks(size=10)
+                                # plt.grid(True)
+                                # plt.show()
 
-                            plt.plot(np.linspace(self.iGoalReached, self.iGoalReached + len(goal_costToCome_list),
-                                                 len(goal_costToCome_list)), goal_costToCome_list, label="Cost-to-come",
-                                     hold='on')
-                            plt.plot(np.linspace(self.iGoalReached, self.iGoalReached + len(goal_costToCome_list),
-                                                 len(goal_costToCome_list)),
-                                     np.repeat(22.896, len(goal_costToCome_list)))
-                            plt.legend(['The proposed algorithm', 'CBF-CLF QP'])
-                            plt.xlabel("number of vertexes ", fontsize=15)
-                            plt.ylabel("cost-to-come", fontsize=15)
-                            plt.xticks(size=10)
-                            plt.yticks(size=10)
-                            plt.grid(True)
-                            plt.show()
+                                plt.plot(np.linspace(self.iGoalReached, self.iGoalReached + len(goal_costToCome_list),
+                                                    len(goal_costToCome_list)), goal_costToCome_list, label="Cost-to-come",
+                                        hold='on')
+                                plt.plot(np.linspace(self.iGoalReached, self.iGoalReached + len(goal_costToCome_list),
+                                                    len(goal_costToCome_list)),
+                                        np.repeat(22.896, len(goal_costToCome_list)))
+                                plt.legend(['The proposed algorithm', 'CBF-CLF QP'])
+                                plt.xlabel("number of vertexes ", fontsize=15)
+                                plt.ylabel("cost-to-come", fontsize=15)
+                                plt.xticks(size=10)
+                                plt.yticks(size=10)
+                                plt.grid(True)
+                                plt.show()
+                        except:
+                            pass 
 
                     else:
                         vg_minCostToCome = None
@@ -1229,7 +1232,7 @@ class CBF_RRTstrr(object):
                     vg_minCostToCome = None
 
                 # Plotting the expansion tree
-                if actual_i % 100 == 0:  # actual_i == 10 or actual_i == 20 or actual_i==100 or actual_i==150 or actual_i==200 or actual_i==1000:
+                if False:#actual_i % 100 == 0:  # actual_i == 10 or actual_i == 20 or actual_i==100 or actual_i==150 or actual_i==200 or actual_i==1000:
                     t1 = timeit.default_timer()
                     xy_plot = self.xy_goal
                     if i == 706:
@@ -1260,16 +1263,16 @@ class CBF_RRTstrr(object):
             flag2000  = (self.i == 1999 or self.i == 2000 or self.i == 2001)
             flag5000  = (self.i == 4999 or self.i == 5000 or self.i == 5001)
             flag10000 = (self.i == 9999 or self.i == 10000 or self.i == 10001)
-            if flag500 or flag1000 or flag2000:#flag10000 or flag1000 or flag2500 or flag5000 or flag100 or flag500:
+            if flag500 or flag1000 or flag2000 or flag5000:#flag10000 or flag1000 or flag2500 or flag5000 or flag100 or flag500:
                 #Save the costs:
 
                 #The first element of the saved list contains the iteration that the goal has been reached at.
                 saveData([self.iGoalReached,self.goal_costToCome_list], self.prefix+'CBF_RRTstr_Cost', suffix=self.suffix,CBF_RRT_strr_obj=self,
-                         adapDist_iter=None, enFlag=False)
+                         adapDist_iter=None, enFlag=True)
 
                 saveData(self.iterTime_list, self.prefix + 'CBF_RRTstr_iterTime',
                          suffix=self.suffix, CBF_RRT_strr_obj=self,
-                         adapDist_iter=None, enFlag=False)
+                         adapDist_iter=None, enFlag=True)
 
                 #Save the tree:
                 saveData([self.TreeT,self.vg_minCostToCome_list], self.prefix+'CBF_RRTstr_Tree', suffix=self.suffix, CBF_RRT_strr_obj=self,
@@ -1278,7 +1281,7 @@ class CBF_RRTstrr(object):
                          CBF_RRT_strr_obj=self,
                          adapDist_iter=None, enFlag=False)
 
-            if i>2000:
+            if i>5001:
                 print("done")
                 break
             print("Iter:", i)
@@ -1311,7 +1314,7 @@ class CBF_RRTstrr(object):
                     a = 1
 
                 #Check how if we ended up away from the goal:
-                if np.linalg.norm(xy_goal-qFinal[0:2]) <= self.eps_g+.5:
+                if np.linalg.norm(xy_goal-qFinal[0:2]) <= self.eps_g+.8:
                     i = i + 1 #The goal vertex will be added anyways to the tree; given that during the initialization we have grown a tree reaches the goal
                     v_goal = Vertex(State=qFinal, StateTraj=qTrajectory, CtrlTraj=uTrajectory, timeTraj=tTrajectory,
                                    curTime=tFinal, indexID=i,ParentIndexID=v_new.indexID,CostToGo = 0.,vgFlag=True)  # TODO (cbfRRT*)
@@ -1366,14 +1369,14 @@ class CBF_RRTstrr(object):
         plt.plot(xy_start[0], xy_start[1], "xb", markersize=15, label="Initial State", hold='on')
         plt.plot(xy_goal[0], xy_goal[1], "^r", markersize=15, label="Goal State", hold='on')
 
-        plt.xlabel("$x_1$", fontsize=15)
-        plt.ylabel("$x_2$", fontsize=15)
-        plt.xticks(size=10)
-        plt.yticks(size=10)
+        plt.xlabel("$x_1$", fontsize=20)
+        plt.ylabel("$x_2$", fontsize=20)
+        plt.xticks(size=15)
+        plt.yticks(size=15)
         # plt.axis(axislim)
         plt.grid(True)
-        plt.legend(loc='best', borderaxespad=0., prop={'size': 10})
-        plt.rcParams.update({'font.size': 10})
+        plt.legend(loc='best', borderaxespad=0., prop={'size': 15})
+        plt.rcParams.update({'font.size': 15})
 
         self.TreePlot = plt
 
@@ -1426,7 +1429,7 @@ class CBF_RRTstrr(object):
 
         # Plot all the paths
         for vertex in VerticesSetValues:
-            if False:#vertex.vgFlag:
+            if vertex.vgFlag:
                 continue
             else:
                 self.plot_vertex(vertex, EnPlotting=True)
@@ -1456,18 +1459,21 @@ class CBF_RRTstrr(object):
         """
         VerticesSet = self.TreeT.VerticesSet
         currVertex = v
-        Traj_v02v = np.array([[],[],[]])
+        Traj_v02v = np.array([[],[]])
         timeTraj_v02v = np.array([])
         while currVertex.indexID is not 0:
 
             #The states' trajectory:
             currVertexTraj = currVertex.StateTraj
-            currVertexTraj = np.flip(currVertexTraj, 1) #We flip the trajectory because we're tracing form the end point to the start point
+            currVertexTraj = np.asarray(currVertexTraj) #We flip the trajectory because we're tracing form the end point to the start point
             currVertex_timeTraj = currVertex.timeTraj
-            currVertex_timeTraj = np.flip(currVertex_timeTraj,0)
+            # currVertex_timeTraj = np.flip(currVertex_timeTraj,0)
 
             #Append the trajectories:
-            Traj_v02v = np.concatenate((Traj_v02v,currVertexTraj),axis=1)
+            if len(Traj_v02v[0]) is 0:
+                Traj_v02v = currVertexTraj
+            else:
+                Traj_v02v = np.concatenate((Traj_v02v,currVertexTraj),axis=0)
             timeTraj_v02v = np.concatenate((timeTraj_v02v, currVertex_timeTraj), axis=0)
 
             currVertex = VerticesSet[currVertex.ParentIndexID]
@@ -1526,63 +1532,67 @@ def main(worldChar='Cltrd_world_big'):
 
     a = list(np.linspace(29, 49, 21))
     for j in [0]:
-        for iRun in [7]:
-            runSeed = int(iRun+2)
-            np.random.seed(runSeed)
-            random.seed(runSeed)
-            sys.setrecursionlimit(2000)
-            # worldChar = 'Cltrd_world_big'
-            if worldChar is 'Cltrd_world':
-                q_init = np.array([.8, 2.5, 0])
-                xy_goal = np.array([5.5, 4.5])
-            elif worldChar is 'Cltrd_world_big':
-                q_init = np.array([1, 2, 0])
-                xy_goal = np.array([8.5, 6.6])
-            elif worldChar is 'Cltrd_world_big2':
-                q_init = np.array([1, 4, 0])
-                xy_goal = np.array([10, 4])
-            elif worldChar is 'nPsgs_world':
-                q_init = np.array([1, 2, 0])
-                xy_goal = np.array([8.5, 6.8])
-            elif worldChar is 'Smpl_world':
-                q_init = np.array([0, 0, 0])
-                xy_goal = np.array([24., 16.])
-            elif worldChar is 'NoObs_world':
-                q_init = np.array([1, 2, 0])
-                xy_goal = np.array([8.5, 6.5])
-            elif worldChar is 'Circ_world':
-                q_init = np.array([2, 12.5, 0])
-                xy_goal = np.array([23, 12.5])
-            elif worldChar is 'CircCross_world':
-                q_init = np.array([2, 12.5, 0])
-                xy_goal = np.array([23, 12.5])
-            elif worldChar is 'RSS_paper':
-                q_init = np.array([0, 3, 0])
-                xy_goal = np.array([15, 13])
+        for iRun in range(20):
+            try:
+                runSeed = int(iRun+1)
+                np.random.seed(runSeed)
+                random.seed(runSeed)
+                sys.setrecursionlimit(2000)
+                # worldChar = 'Cltrd_world_big'
+                if worldChar is 'Cltrd_world':
+                    q_init = np.array([.8, 2.5, 0])
+                    xy_goal = np.array([5.5, 4.5])
+                elif worldChar is 'Cltrd_world_big':
+                    q_init = np.array([1, 2, 0])
+                    xy_goal = np.array([8.5, 6.6])
+                elif worldChar is 'Cltrd_world_big2':
+                    q_init = np.array([1, 4, 0])
+                    xy_goal = np.array([10, 4])
+                elif worldChar is 'nPsgs_world':
+                    q_init = np.array([1, 2, 0])
+                    xy_goal = np.array([8.5, 6.8])
+                elif worldChar is 'Smpl_world':
+                    q_init = np.array([0, 0, 0])
+                    xy_goal = np.array([24., 16.])
+                elif worldChar is 'NoObs_world':
+                    q_init = np.array([1, 2, 0])
+                    xy_goal = np.array([8.5, 6.5])
+                elif worldChar is 'Circ_world':
+                    q_init = np.array([2, 12.5, 0])
+                    xy_goal = np.array([23, 12.5])
+                elif worldChar is 'CircCross_world':
+                    q_init = np.array([2, 12.5, 0])
+                    xy_goal = np.array([23, 12.5])
+                elif worldChar is 'RSS_paper':
+                    q_init = np.array([0, 3, 0])
+                    xy_goal = np.array([15, 13])
 
-            #File naming stuff:
+                #File naming stuff:
 
-            CBF_RRT_object = CBF_RRTstrr(suffix=worldChar,q_init=q_init,xy_goal=xy_goal,eps_g=.8)
-            # if j == 0:
-            #     CBF_RRT_object.kde_enabled = False
-            # else:
-            #     CBF_RRT_object.kde_enabled = False
+                CBF_RRT_object = CBF_RRTstrr(suffix=worldChar,q_init=q_init,xy_goal=xy_goal,eps_g=.5)
+                # if j == 0:
+                #     CBF_RRT_object.kde_enabled = False
+                # else:
+                #     CBF_RRT_object.kde_enabled = False
 
-            if CBF_RRT_object.kde_enabled or CBF_RRT_object.params.CE_enabled:
-                prefix = 'adap'
-            else:
-                prefix = '_'
-            CBF_RRT_object.prefix = prefix
-            CBF_RRT_object.Initialization(worldChar=worldChar)
-            CBF_RRT_object.initialize_graphPlot()
-            # plt.show()
-            CBF_RRT_object.iRun = int(iRun+1)
-            #---- Manual plan:
-            #----
+                if CBF_RRT_object.kde_enabled or CBF_RRT_object.params.CE_enabled:
+                    prefix = 'adap'
+                else:
+                    prefix = '_'
+                CBF_RRT_object.prefix = prefix
+                CBF_RRT_object.Initialization(worldChar=worldChar)
+                # CBF_RRT_object.initialize_graphPlot()
+                # plt.show()
+                CBF_RRT_object.iRun = int(iRun+1)
+                #---- Manual plan:
+                #----
 
 
-            # plt.show()
-            CBF_RRT_object.Plan_CBF_RRT_strr()
+                # plt.show()
+                CBF_RRT_object.Plan_CBF_RRT_strr()
+            except:
+                print("Run:",iRun+1," has faild")
+                pass
 
 
 if __name__ == '__main__':
@@ -1592,8 +1602,12 @@ if __name__ == '__main__':
         main(worldChar)
     end_time = time.time()
     print("Total runtime:", end_time - start_time)
-    # import cProfile
     
+    
+    #---------------------------------------------
+    # The follwing part is for profiling the code:
+    #---------------------------------------------
+    # import cProfile 
     # cProfile.run('main()', "output3.dat")
     
     # import pstats

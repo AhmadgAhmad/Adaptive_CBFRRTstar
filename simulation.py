@@ -380,7 +380,7 @@ class Simulation(object):
                         flag = self.agt_circD(agt,self.obsts[k])
                     else:
                         flag = self.agt_circD(agt, self.obsts[k])
-                    if flag:#flag: # If there's an obstacle in the sensor footprint 
+                    if flag:# If there's an obstacle in the sensor footprint [Expect to improve the computational time (adding constrins to the QP takes time)] 
                         self.add_cbf_pair(m, agt, self.obsts[k])
                 t1_obs_cbfs  = timeit.default_timer()
                 T_obs_cbfs = t1_obs_cbfs-t0_obs_cbfs
