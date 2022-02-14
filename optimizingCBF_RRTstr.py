@@ -85,7 +85,7 @@ class CBF_RRTstrr(object):
         self.kde_eliteSamples = []
         self.KDE_fitSamples = None
         self.KDE_pre_gridProbs = None
-        self.kde_enabled = True
+        self.kde_enabled = self.params.kde_enabled
         #---gmm
         self.gmmOpt_flag = False
 
@@ -114,9 +114,16 @@ class CBF_RRTstrr(object):
         self.obsWorldList = []
         self.simObject = None
         self.robotDynType = Dyn.SINGLE_INT
+        
         #Probing attributes:
         self.bestGCost = None
         self.Vexisit = False
+        
+        #CBF-RRT: 
+        self.CBF_RRT_enable = self.params.CBF_RRT_enabled
+
+        #CLF-CBF QP: 
+        self.CBF_CLF_enable = True
     ######################################################################################################################:
     ############################## Initialization Procedure: #############################################################:
      # This method initializes the tree with the an initial vertex and empty edge set. It also initiates a
@@ -326,11 +333,11 @@ class CBF_RRTstrr(object):
             obs2 = Ellipsoid(np.array([0, 8]), np.array([1.5, 1.5]), angle=0)
             obs3 = Ellipsoid(np.array([9, 16.5]), np.array([1.5, 1.5]), angle=0)
             obs4 = Ellipsoid(np.array([15, 5]), np.array([1.5, 1.5]), angle=0)
-            obs5 = Ellipsoid(np.array([5, 5]), np.array([1.1, 1.1]), angle=0)
+            obs5 = Ellipsoid(np.array([5, 5.5]), np.array([1.1, 1.1]), angle=0)
 
             # obs6 = Ellipsoid(np.array([13, 19.4]), np.array([1.5, 1.5]), angle=0)
-            obs7 = Ellipsoid(np.array([10, 9.5]), np.array([1.8, .4]), angle=60)
-            obs8 = Ellipsoid(np.array([10, 9.5]), np.array([1.8, .4]), angle=-30)
+            obs7 = Ellipsoid(np.array([10, 10.5]), np.array([1.8, .4]), angle=60)
+            obs8 = Ellipsoid(np.array([10, 10.5]), np.array([1.8, .4]), angle=-30)
 
             # obs9 = Ellipsoid(np.array([13, 5.6]), np.array([1.5, 1.5]), angle=0)
             # obs10 = Ellipsoid(np.array([17, 22.5]), np.array([1.5, 1.5]), angle=0)
@@ -463,6 +470,7 @@ class CBF_RRTstrr(object):
                 y = xySample[0][1]
 
 
+
             if x is None and y is None: #CE_Sample() will return None if not enough samples of trajectoies that reach the goal are avialbe
                 x = random.uniform(-1, length)
                 y = random.uniform(-1, width)
@@ -486,7 +494,13 @@ class CBF_RRTstrr(object):
             frakX = []
             #Find the elite trajectoies then discretize them and use their samples as the elite samples:
             Vg_leaves_costList = [vg.CostToCome for vg in Vg_leaves]
-            q = self.params.rho
+            if (self.adapIter + 3) > 5: 
+                d_factor = 50
+            elif self.adapIter > 2:
+                d_factor = self.adapIter + 3
+            else: 
+                d_factor = self.adapIter
+            q = self.params.rho/d_factor
             cost_rhoth_q = np.quantile(Vg_leaves_costList, q=q)
             elite_Vg_leaves = [vg for vg in Vg_leaves if vg.CostToCome <= cost_rhoth_q]
             if len(elite_Vg_leaves) == 0:
@@ -509,7 +523,7 @@ class CBF_RRTstrr(object):
                 tStep_init1 = int(h/self.params.step_size)
                 tStep_init = 2
                 tStep = 10
-                tStep_temp = tStep_init1+5
+                tStep_temp = tStep_init1+3
                 while tStep < len(traj2vg[:,1]):
                     pi_q_tStep = traj2vg[tStep,:]
                     elite_cddtSample = [pi_q_tStep,vgCostToCome] #This tuple contains the actual sample pi_q_tStep and the CostToCome to the goal of the corresponding trajectory
@@ -581,8 +595,9 @@ class CBF_RRTstrr(object):
             # Find the KL divergence the current samples and the previous ones:
             if self.adapIter > 2:
                 KL_div = self.KLdiv(grid_probs)
-                if KL_div < .05:
+                if KL_div < .005:
                     self.kdeOpt_flag = True
+                    
                 self.KDE_fitSamples = kde #This kde object will be used to sample form whn the optimal sampling distribution has been reached
 
             self.KDE_pre_gridProbs = grid_probs
@@ -590,9 +605,9 @@ class CBF_RRTstrr(object):
             saveData(self.goal_costToCome_list, 'adapCBF_RRTstr_Cost', suffix=self.suffix, CBF_RRT_strr_obj=self,
                      adapDist_iter=self.adapIter-1, enFlag=False)
 
-            saveData([self.TreeT,self.vg_minCostToCome_list], 'adapCBF_RRTstr_Tree', suffix=self.suffix, CBF_RRT_strr_obj=self,
+            saveData([self.TreeT,self.vg_minCostToCome_list], 'adapCBF_RRTstr_Tree_rss', suffix=self.suffix, CBF_RRT_strr_obj=self,
                      adapDist_iter=self.adapIter - 1, enFlag=False)
-            saveData([Xxgrid, Xygrid, grid_probs.reshape(Xxgrid.shape),elite_samples_arr], 'adapCBF_RRTstr_KDEgridProbs',
+            saveData([Xxgrid, Xygrid, grid_probs.reshape(Xxgrid.shape),elite_samples_arr], 'adapCBF_RRTstr_KDEgridProbs_rss',
                      suffix=self.suffix, CBF_RRT_strr_obj=self,
                      adapDist_iter=self.adapIter - 1, enFlag=False)
 
@@ -1074,12 +1089,20 @@ class CBF_RRTstrr(object):
         goal_tCost_list = []
 
         while i <= self.NSampling or not (reachedFlag): #TODO change
+            
+            if self.CBF_CLF_enable: 
+                qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(self.TreeT.VerticesSet[0],
+                                                                                         desired_pos=[xy_goal[0],xy_goal[1]])
+                saveData([qTrajectory], self.prefix+'CLF_CBF_traj_rss', suffix=self.suffix,CBF_RRT_strr_obj=self,
+                         adapDist_iter=None, enFlag=False)
+                break
 
             #TTTTTTTTTTTT
             t0_i = timeit.default_timer()
             #TTTTTTTTTTTT
             # Adapt the sampling distribution based on the expanded trajectories to the goal are
             # ===== Generate Sample in the mission space and find the nearest vertex to it:
+            
             xy_sample = self.UpSampling_andSample(self.Vg_leaves,md=md,rho=rho,\
                 rce=rce,length=length,width=width,initTree_flag=initTree_flag)  # Until this moment this method returns a sample in the x-y space
             v_nearest = self.Nearest(xy_sample)  # Return the indexID of the NN vertex
@@ -1109,11 +1132,11 @@ class CBF_RRTstrr(object):
             self.addVertex(v_new)
             # ===== Check the near vertices in the tree within a ball of the vertex:
             gamma = self.params.gamma
-            gamma = 8
+            gamma = 20
             #Experemntally for edge length =1
             cardV = len(self.TreeT.VerticesSet)                  # Complexity: O(1)
             vb_radi = gamma * math.sqrt(math.log(cardV) / cardV) #gamma * math.log(cardV)
-            steer_radi = (self.params.edge_length)
+            steer_radi = (self.params.edge_length)+1.1
             b_radi = min(vb_radi, steer_radi) #TODO why it is slow?
             # b_radi = .95
             if b_radi<.46:
@@ -1121,18 +1144,29 @@ class CBF_RRTstrr(object):
 
 
             #RRT
-            Nnear_vSet = self.Near(Vertex=v_new,b_raduis=b_radi)  # TODO: (debug) prevent the vertex to be neighbor to itself
-            Nnear_vSet = Nnear_vSet[1:]
+            # Nnear_vSet = self.Near(Vertex=v_new,b_raduis=b_radi)  # TODO: (debug) prevent the vertex to be neighbor to itself
+            # Nnear_vSet = Nnear_vSet[1:]
 
             # ===== Choose the best parent for v_new from the near vertices:
             #RRT
-            v_min, v_new = self.ChooseParent(Nnear_vSet=Nnear_vSet, v_nearest=v_nearest, v_new=v_new)
+            if not self.CBF_RRT_enable: 
+                b_radi = min(vb_radi, steer_radi-.8)
+                Nnear_vSet = self.Near(Vertex=v_new,b_raduis=b_radi)  # TODO: (debug) prevent the vertex to be neighbor to itself
+                Nnear_vSet = Nnear_vSet[1:]
+                v_min, v_new = self.ChooseParent(Nnear_vSet=Nnear_vSet, v_nearest=v_nearest, v_new=v_new)
+            else: # No rewiring procedure
+                v_min = v_nearest
+                v_new.ParentIndexID = v_min.indexID
+                v_new.CostToCome = v_min.CostToCome + self.Cost_v2v(v_nearest,v_new)
             self.addChild(v_min,v_new) # (v_parent,v_child)
 
 
             # ===== Rewire the near vertices (check if choosing v_new as a parent would lower the cost)
-
-            self.Rewire(Nnear_vSet=Nnear_vSet, v_nearest=v_min, v_new=v_new)
+            if not self.CBF_RRT_enable: #No rewiring procedure is required: 
+                # b_radi = min(vb_radi, steer_radi)
+                # Nnear_vSet = self.Near(Vertex=v_new,b_raduis=b_radi)  # TODO: (debug) prevent the vertex to be neighbor to itself
+                # Nnear_vSet = Nnear_vSet[1:]
+                self.Rewire(Nnear_vSet=Nnear_vSet, v_nearest=v_min, v_new=v_new)
 
 
             # ===== Inspecting v_goal =============
@@ -1187,7 +1221,7 @@ class CBF_RRTstrr(object):
                         Traj = []
                         # Plotting the evolution of the costs:
                         try:
-                            if False:#actual_i % 50 == 0 and vg_minCostToCome.CostToCome is not None:
+                            if False: #actual_i % 100 == 0:#actual_i % 50 == 0 and vg_minCostToCome.CostToCome is not None:
                                 Traj, timeTraj = self.get_xythetaTraj(vg_minCostToCome)
                                 timeTraj = np.linspace(0, len(Traj[0, :]) * self.params.step_size, len(Traj[0, :]))
                                 # plt.plot(timeTraj, Traj[0, :])
@@ -1235,8 +1269,6 @@ class CBF_RRTstrr(object):
                 if False:#actual_i % 100 == 0:  # actual_i == 10 or actual_i == 20 or actual_i==100 or actual_i==150 or actual_i==200 or actual_i==1000:
                     t1 = timeit.default_timer()
                     xy_plot = self.xy_goal
-                    if i == 706:
-                        a = 1
                     self.initialize_graphPlot()
                     goalVertex = self.plot_tree(vg_minCostToCome, plot_pathFalg=True)
                     self.TreePlot.show()
@@ -1258,30 +1290,32 @@ class CBF_RRTstrr(object):
 
             #Probing the tree costs at 100, 500, 2500, and 10000 iterations:
             flag100   = (self.i==99 or self.i==100 or self.i==101)
+            flag300   = (self.i == 299 or self.i == 300 or self.i == 301)
             flag500   = (self.i == 499 or self.i == 500 or self.i == 501)
             flag1000  = (self.i == 999 or self.i == 1000 or self.i == 1001)
             flag2000  = (self.i == 1999 or self.i == 2000 or self.i == 2001)
+            flag3000  = (self.i == 2999 or self.i == 3000 or self.i == 3001)
             flag5000  = (self.i == 4999 or self.i == 5000 or self.i == 5001)
             flag10000 = (self.i == 9999 or self.i == 10000 or self.i == 10001)
-            if flag500 or flag1000 or flag2000 or flag5000:#flag10000 or flag1000 or flag2500 or flag5000 or flag100 or flag500:
+            if flag500:# flag500 or flag1000 or flag2000 or flag5000:#flag10000 or flag1000 or flag2500 or flag5000 or flag100 or flag500:
                 #Save the costs:
 
                 #The first element of the saved list contains the iteration that the goal has been reached at.
-                saveData([self.iGoalReached,self.goal_costToCome_list], self.prefix+'CBF_RRTstr_Cost', suffix=self.suffix,CBF_RRT_strr_obj=self,
+                saveData([self.iGoalReached,self.goal_costToCome_list], self.prefix+'CBF_RRTstr_Cost_rss', suffix=self.suffix,CBF_RRT_strr_obj=self,
                          adapDist_iter=None, enFlag=True)
 
                 saveData(self.iterTime_list, self.prefix + 'CBF_RRTstr_iterTime',
                          suffix=self.suffix, CBF_RRT_strr_obj=self,
-                         adapDist_iter=None, enFlag=True)
+                         adapDist_iter=None, enFlag=False)
 
                 #Save the tree:
-                saveData([self.TreeT,self.vg_minCostToCome_list], self.prefix+'CBF_RRTstr_Tree', suffix=self.suffix, CBF_RRT_strr_obj=self,
-                         adapDist_iter=None, enFlag=False)
+                saveData([self.TreeT,self.vg_minCostToCome_list], self.prefix+'CBF_RRTstr_Tree_rss', suffix=self.suffix, CBF_RRT_strr_obj=self,
+                         adapDist_iter=None, enFlag=True)
                 saveData([Traj], self.prefix + 'CBF_RRTstr_PathToG', suffix=self.suffix,
                          CBF_RRT_strr_obj=self,
                          adapDist_iter=None, enFlag=False)
 
-            if i>5001:
+            if i>3001:
                 print("done")
                 break
             print("Iter:", i)
@@ -1369,8 +1403,8 @@ class CBF_RRTstrr(object):
         plt.plot(xy_start[0], xy_start[1], "xb", markersize=15, label="Initial State", hold='on')
         plt.plot(xy_goal[0], xy_goal[1], "^r", markersize=15, label="Goal State", hold='on')
 
-        plt.xlabel("$x_1$", fontsize=20)
-        plt.ylabel("$x_2$", fontsize=20)
+        plt.xlabel("$x$", fontsize=20)
+        plt.ylabel("$y$", fontsize=20)
         plt.xticks(size=15)
         plt.yticks(size=15)
         # plt.axis(axislim)
@@ -1400,7 +1434,7 @@ class CBF_RRTstrr(object):
             pass
 
 
-    def plot_pathToVertex(self, vertex, EnPlotting=False, colorPath=[1., 0., 1.]):
+    def plot_pathToVertex(self, vertex,marker = None, EnPlotting=False, colorPath=[1., 0., 1.]):
         """Plot the vertex location in the 2D space. Will extract the xy_pose and plot accordingly.
             Inputs:
             - vertex: Vertex object
@@ -1416,7 +1450,11 @@ class CBF_RRTstrr(object):
             else:
                 vertexTrajectory = vertex
             vertexTrajectory = np.asarray(vertexTrajectory)
-            plt.plot(vertexTrajectory[:, 0], vertexTrajectory[:, 1], markersize=.1, color=colorPath, mfc=[1., 0., 1.],
+            if marker is None: 
+                plt.plot(vertexTrajectory[:, 0], vertexTrajectory[:, 1], markersize=.1, color=colorPath, mfc=[1., 0., 1.],
+                     mec=[0.1, 0.1, 0.1], hold='on')
+            else: 
+                plt.plot(vertexTrajectory[:, 0], vertexTrajectory[:, 1],marker, markersize=5, color=colorPath, mfc=[1., 0., 1.],
                      mec=[0.1, 0.1, 0.1], hold='on')
             self.TreePlot = plt
         else:
@@ -1450,6 +1488,38 @@ class CBF_RRTstrr(object):
                 self.plot_pathToVertex(currVertex, EnPlotting=True, colorPath=[0., 1., 0.])
                 currVertex = VerticesSet[currVertex.ParentIndexID]
             return v_nearest2point
+
+    
+   
+    def plot_Path2Goal(self,trees = None,v_nst2ptrrt = None,v_nst2ptrrt_star = None,v_nst2pt_adrrt_star = None,clfcbf_traj = None,plot_pathFalg = False):
+        
+    
+        #Plot CBF-RRT
+        currVertex = v_nst2ptrrt
+        VerticesSet = trees[0]
+        while currVertex.indexID is not 0:
+            self.plot_pathToVertex(currVertex,marker = 'r--', EnPlotting=True, colorPath=[0., 1., 0.])
+            currVertex = VerticesSet[currVertex.ParentIndexID]
+        
+        #Plot CBF-RRTstar
+        currVertex = v_nst2ptrrt_star
+        VerticesSet = trees[1]
+        while currVertex.indexID is not 0:
+            self.plot_pathToVertex(currVertex,marker = 'bs', EnPlotting=True, colorPath=[1., 0., 0.])
+            currVertex = VerticesSet[currVertex.ParentIndexID]
+        
+        #Plot adaptive rrt star
+        currVertex = v_nst2pt_adrrt_star
+        VerticesSet = trees[2]
+        while currVertex.indexID is not 0:
+            self.plot_pathToVertex(currVertex, EnPlotting=True, colorPath=[0., 0., 1.])
+            currVertex = VerticesSet[currVertex.ParentIndexID]
+            
+        #Plot CLF-CBFQP path 
+        clfcbf_traj = np.asarray(clfcbf_traj)
+        plt.plot(clfcbf_traj[0,:, 0], clfcbf_traj[0,:, 1],'g^', markersize=5, color=[1.,1.,0.], mfc=[1., 0., 1.],\
+                     mec=[0.1, 0.1, 0.1])
+        a = 2
 
     def get_xythetaTraj(self,v):
         """
@@ -1532,7 +1602,7 @@ def main(worldChar='Cltrd_world_big'):
 
     a = list(np.linspace(29, 49, 21))
     for j in [0]:
-        for iRun in range(20):
+        for iRun in [7]:
             try:
                 runSeed = int(iRun+1)
                 np.random.seed(runSeed)
@@ -1564,7 +1634,7 @@ def main(worldChar='Cltrd_world_big'):
                     q_init = np.array([2, 12.5, 0])
                     xy_goal = np.array([23, 12.5])
                 elif worldChar is 'RSS_paper':
-                    q_init = np.array([0, 3, 0])
+                    q_init = np.array([0.5, 3, 0])
                     xy_goal = np.array([15, 13])
 
                 #File naming stuff:
@@ -1577,6 +1647,8 @@ def main(worldChar='Cltrd_world_big'):
 
                 if CBF_RRT_object.kde_enabled or CBF_RRT_object.params.CE_enabled:
                     prefix = 'adap'
+                elif CBF_RRT_object.CBF_RRT_enable:
+                    prefix = 'RRT_'
                 else:
                     prefix = '_'
                 CBF_RRT_object.prefix = prefix
@@ -1591,8 +1663,8 @@ def main(worldChar='Cltrd_world_big'):
                 # plt.show()
                 CBF_RRT_object.Plan_CBF_RRT_strr()
             except:
+                raise
                 print("Run:",iRun+1," has faild")
-                pass
 
 
 if __name__ == '__main__':
