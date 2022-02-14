@@ -122,8 +122,11 @@ class CBF_RRTstrr(object):
         #CBF-RRT: 
         self.CBF_RRT_enable = self.params.CBF_RRT_enabled
 
+        # RRTstar: 
+        self.RRTstr_enabled = self.params.RRTstr_enabled 
+
         #CLF-CBF QP: 
-        self.CBF_CLF_enable = True
+        self.CBF_CLF_enabled = self.params.CBF_CLF_enabled
     ######################################################################################################################:
     ############################## Initialization Procedure: #############################################################:
      # This method initializes the tree with the an initial vertex and empty edge set. It also initiates a
@@ -764,6 +767,9 @@ class CBF_RRTstrr(object):
         Take the desired theta to steer to (desired_theta); the vertex to steer from (v_nearest);
         the mission space (embed in simObject); and the current tree (embed in self). It will steer with
         m-Steps (m=10) in the  theta direction.
+
+        If RRTstar is eneabled then the function steer in straight lines and check for collosion. 
+
         :param v_nearest:
         :param desired_theta:
         :param m: The number 
@@ -814,6 +820,7 @@ class CBF_RRTstrr(object):
         qTrajectory = qTrajectory[0][1:]
         return qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory[0][1:] + tInitial
 
+    
     def SafeSteering2Goal(self,xy_agt,xy_goal):
         """
         Generates minimal control trajectory for a unicycle robot defined as single integrator. QP controller is subject
@@ -829,6 +836,23 @@ class CBF_RRTstrr(object):
         qFinal = qTrajectory[0][:, -1]
         tFinal = tTrajectory[0][-1]
         return qFinal, tFinal, uTrajectory[0], qTrajectory[0], tTrajectory[0]
+
+    def Col_check(self,qTraj):
+        """
+        Checkes if the extended trajectory is in collsion with the obstacles or not
+        Input: 
+        self: contains the information about the workspace and the obstacles
+        qTraj: the extended edge trajectory
+         
+        Output: 
+        col_flag: True if qTraj is in collosion with any of the obstacles
+
+        """
+        #Obstacles in the workspace: 
+        col_flag  = False
+
+
+        return col_flag
 
 
     def ChooseParent(self, Nnear_vSet, v_nearest, v_new):
@@ -1090,7 +1114,7 @@ class CBF_RRTstrr(object):
 
         while i <= self.NSampling or not (reachedFlag): #TODO change
             
-            if self.CBF_CLF_enable: 
+            if self.CBF_CLF_enabled: 
                 qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(self.TreeT.VerticesSet[0],
                                                                                          desired_pos=[xy_goal[0],xy_goal[1]])
                 saveData([qTrajectory], self.prefix+'CLF_CBF_traj_rss', suffix=self.suffix,CBF_RRT_strr_obj=self,
