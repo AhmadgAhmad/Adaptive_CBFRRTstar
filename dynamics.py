@@ -473,7 +473,7 @@ class Unicycle(Dynamics):
             v = m.addVar(lb=0, ub=v_ub, vtype=GRB.CONTINUOUS, name="vel{}".format(id))
             uVariables = np.append(uVariables,v)
         if w_ctrlFlag:
-            w = m.addVar(lb=-100, ub=100, vtype=GRB.CONTINUOUS, name="omega{}".format(id))
+            w = m.addVar(lb= - self.params.we_upper_bound, ub=self.params.we_upper_bound, vtype=GRB.CONTINUOUS, name="omega{}".format(id))
             uVariables = np.append(uVariables,w)
         #uVariables.shape = [2,1]
         return uVariables
