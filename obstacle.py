@@ -174,8 +174,8 @@ class Ellipsoid(Obstacle):
         self.k_cbf = 2.0
 
         #Computing the matrix of the ellipsoid:
-        a_aug = self.a + ((0.1 * self.sign) * -1)
-        b_aug = self.b + ((0.1 * self.sign) * -1)
+        a_aug = self.a + ((0.1 * self.sign) * 1)
+        b_aug = self.b + ((0.1 * self.sign) * 1)
         theta1 = math.radians(angle)
 
         c = math.cos(theta1)
@@ -185,6 +185,7 @@ class Ellipsoid(Obstacle):
         bb = s * c * ((1 / b_aug) ** 2 - (1 / a_aug) ** 2)
         cc = (s / a_aug) ** 2 + (c / b_aug) ** 2
         M_ellip = np.array([[aa, bb], [bb, cc]])
+        
         self.M_ellip = M_ellip
 
     def h_func(self, a1):

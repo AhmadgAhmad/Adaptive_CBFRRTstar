@@ -288,11 +288,11 @@ class CBF_RRTstrr(object):
 
         if worldChar is 'TestingCol':
             obs1 = Sphere(np.array([10,10]), radius=5)
-            obs2 = Ellipsoid(np.array([1, 0.2]), np.array([.15,.5]), angle=45)
-            obs3 = Ellipsoid(np.array([1, 0.2]),np.array([.15,0.5]), angle=-45)
+            obs2 = Ellipsoid(np.array([1,.2]), np.array([.15,.5]), angle=45)
+            obs3 = Ellipsoid(np.array([1, .2]),np.array([.15,0.5]), angle=-45)
             #--- self.add_obstacleToWorld(obs1)
-            self.add_obstacleToWorld(obs2)
-            self.add_obstacleToWorld(obs3)
+            # self.add_obstacleToWorld(obs2)
+            # self.add_obstacleToWorld(obs3)
 
         if worldChar is 'Circ_world':
             #This world to demonstrad a carfully designed world where multiple paths with have identical cost
@@ -818,6 +818,7 @@ class CBF_RRTstrr(object):
         qFinal = qTrajectory[0][-1]
         tFinal = tTrajectory[0][-1] + tInitial
         qTrajectory = qTrajectory[0][1:]
+        # temp = self.Col_check(qTrajectory)
         return qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory[0][1:] + tInitial
 
     
@@ -837,23 +838,7 @@ class CBF_RRTstrr(object):
         tFinal = tTrajectory[0][-1]
         return qFinal, tFinal, uTrajectory[0], qTrajectory[0], tTrajectory[0]
 
-    def Col_check(self,qTraj):
-        """
-        Checkes if the extended trajectory is in collsion with the obstacles or not
-        Input: 
-        self: contains the information about the workspace and the obstacles
-        qTraj: the extended edge trajectory
-         
-        Output: 
-        col_flag: True if qTraj is in collosion with any of the obstacles
-
-        """
-        #Obstacles in the workspace: 
-        col_flag  = False
-
-
-        return col_flag
-
+   
 
     def ChooseParent(self, Nnear_vSet, v_nearest, v_new):
         """
@@ -1046,6 +1031,43 @@ class CBF_RRTstrr(object):
             currCostToGo = self.TreeT.VerticesSet[ParentIndexID].CostToGo
             vertex_indexID = ParentIndexID
 
+    def iscoll(self,xy_sample = None, qTraj = None):
+        """
+        Returns True if xy_sample or any point of qTraj is in collosion. 
+        
+        Input: 
+        - xy_sample: 
+        - qTraj: 
+        """
+        col_flag = False
+        obsWorldList = self.obsWorldList
+        if xy_sample is not None: 
+            for obst in obsWorldList: 
+                try:
+                    M_ellip = obst.M_ellip
+                except: 
+                    raise('Define your obstacle as an ellipsoid (even if it is a sphere)')
+                h = ((xy_sample - obst.state[0:2]).transpose().dot(M_ellip).dot((xy_sample - obst.state[0:2])) - 1) * obst.sign
+                if h<0:
+                   col_flag = True
+                   break 
+        elif qTraj is not None:
+            # TODO: make a list of xyTraj of the xy positions of the trajectory: 
+            for xy in qTraj:
+                for obst in obsWorldList: 
+                    try:
+                        M_ellip = obst.M_ellip
+                    except: 
+                        raise('Define your obstacle as an ellipsoid (even if it is a sphere)')
+                    h = ((xy - obst.state[0:2]).transpose().dot(M_ellip).dot((xy - obst.state[0:2])) - 1) * obst.sign
+                    if h<0:
+                        col_flag = True
+                        break
+        else:
+            raise('Neither xy_sample nor qTraj are passed to the function')
+        return col_flag
+        
+
     def MiniTime_Traj(self):
         pass
 
@@ -1129,6 +1151,15 @@ class CBF_RRTstrr(object):
             
             xy_sample = self.UpSampling_andSample(self.Vg_leaves,md=md,rho=rho,\
                 rce=rce,length=length,width=width,initTree_flag=initTree_flag)  # Until this moment this method returns a sample in the x-y space
+            #>>>> RRTstar_ext
+            
+            if self.RRTstr_enabled: 
+                coll_falg = self.iscoll(xy_sample)
+                if coll_flag: # The sample is in collision  
+                    i = i+1
+                    self.i = i
+                    continue
+
             v_nearest = self.Nearest(xy_sample)  # Return the indexID of the NN vertex
             xy_v_nearest = v_nearest.State[0:2]
             desired_theta = math.atan2( xy_sample[1]-xy_v_nearest[1],xy_sample[0]-xy_v_nearest[0])
@@ -1140,6 +1171,7 @@ class CBF_RRTstrr(object):
             qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = \
                 self.SafeSteering(v_nearest, desired_theta = desired_theta,m=ball_steeringSteps) #TODO (cbfRRTst)
             sample_okFlag = isAcceptableSample(traj = qTrajectory, desiredSteps_num = ball_steeringSteps)
+            coll_flag = self.iscoll(qTraj=qTrajectory)
             if sample_okFlag: # Why we need it? 
                 v_new = Vertex(State=qFinal, StateTraj=np.asarray(qTrajectory), CtrlTraj=uTrajectory,\
                      timeTraj=tTrajectory,curTime=tFinal, indexID=i) #TODO (cbfRRT*)
@@ -1326,7 +1358,7 @@ class CBF_RRTstrr(object):
 
                 #The first element of the saved list contains the iteration that the goal has been reached at.
                 saveData([self.iGoalReached,self.goal_costToCome_list], self.prefix+'CBF_RRTstr_Cost_rss', suffix=self.suffix,CBF_RRT_strr_obj=self,
-                         adapDist_iter=None, enFlag=True)
+                         adapDist_iter=None, enFlag=False)
 
                 saveData(self.iterTime_list, self.prefix + 'CBF_RRTstr_iterTime',
                          suffix=self.suffix, CBF_RRT_strr_obj=self,
@@ -1334,7 +1366,7 @@ class CBF_RRTstrr(object):
 
                 #Save the tree:
                 saveData([self.TreeT,self.vg_minCostToCome_list], self.prefix+'CBF_RRTstr_Tree_rss', suffix=self.suffix, CBF_RRT_strr_obj=self,
-                         adapDist_iter=None, enFlag=True)
+                         adapDist_iter=None, enFlag=False)
                 saveData([Traj], self.prefix + 'CBF_RRTstr_PathToG', suffix=self.suffix,
                          CBF_RRT_strr_obj=self,
                          adapDist_iter=None, enFlag=False)
@@ -1677,8 +1709,8 @@ def main(worldChar='Cltrd_world_big'):
                     prefix = '_'
                 CBF_RRT_object.prefix = prefix
                 CBF_RRT_object.Initialization(worldChar=worldChar)
-                # CBF_RRT_object.initialize_graphPlot()
-                # plt.show()
+                CBF_RRT_object.initialize_graphPlot()
+                plt.show()
                 CBF_RRT_object.iRun = int(iRun+1)
                 #---- Manual plan:
                 #----
