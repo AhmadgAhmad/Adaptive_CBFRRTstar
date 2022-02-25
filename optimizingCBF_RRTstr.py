@@ -291,8 +291,8 @@ class CBF_RRTstrr(object):
             obs2 = Ellipsoid(np.array([1,.2]), np.array([.15,.5]), angle=45)
             obs3 = Ellipsoid(np.array([1, .2]),np.array([.15,0.5]), angle=-45)
             #--- self.add_obstacleToWorld(obs1)
-            # self.add_obstacleToWorld(obs2)
-            # self.add_obstacleToWorld(obs3)
+            self.add_obstacleToWorld(obs2)
+            self.add_obstacleToWorld(obs3)
 
         if worldChar is 'Circ_world':
             #This world to demonstrad a carfully designed world where multiple paths with have identical cost
@@ -781,6 +781,12 @@ class CBF_RRTstrr(object):
         
         # Check if the instruction is to safe steer towards a desired direction [CBF-QP] or to exactly steer to a 
         # desired position [CLF-CBF-QP]: 
+        
+        # RRT* ext, remove all the obstacles from the sim obj and just generate feasible trajectory: >>> 
+        if self.RRTstr_enabled: 
+            self.simObject.obsts = [] 
+        #<<<<<
+        
         if desired_pos is None: #Safe steer [CBF-QP] 
             if self.robotDynType is Dyn.SINGLE_INT:
                 u1_ref = np.linspace(edge_length*math.cos(desired_theta),edge_length*math.cos(desired_theta), m)
@@ -820,7 +826,7 @@ class CBF_RRTstrr(object):
         qTrajectory = qTrajectory[0][1:]
         # temp = self.Col_check(qTrajectory)
         return qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory[0][1:] + tInitial
-
+    
     
     def SafeSteering2Goal(self,xy_agt,xy_goal):
         """
@@ -1147,11 +1153,11 @@ class CBF_RRTstrr(object):
             t0_i = timeit.default_timer()
             #TTTTTTTTTTTT
             # Adapt the sampling distribution based on the expanded trajectories to the goal are
-            # ===== Generate Sample in the mission space and find the nearest vertex to it:
+            # ===== Generate Sample in the workspace space and find the nearest vertex to it:
             
             xy_sample = self.UpSampling_andSample(self.Vg_leaves,md=md,rho=rho,\
                 rce=rce,length=length,width=width,initTree_flag=initTree_flag)  # Until this moment this method returns a sample in the x-y space
-            #>>>> RRTstar_ext
+            #>>>> RRTstar_ext (Return a sample in the free workspace):
             
             if self.RRTstr_enabled: 
                 coll_falg = self.iscoll(xy_sample)
@@ -1168,15 +1174,20 @@ class CBF_RRTstrr(object):
             # ===== Steering from xy_v_nearest towards xy_sample with M-steps (to be specified):
 
             # TODO[RSS] No need for this safe-steering step, you just need to safe steer in chose parent. Given that choose parent procedure will return the nn vertex anyway. 
-            qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = \
-                self.SafeSteering(v_nearest, desired_theta = desired_theta,m=ball_steeringSteps) #TODO (cbfRRTst)
-            sample_okFlag = isAcceptableSample(traj = qTrajectory, desiredSteps_num = ball_steeringSteps)
-            coll_flag = self.iscoll(qTraj=qTrajectory)
-            if sample_okFlag: # Why we need it? 
-                v_new = Vertex(State=qFinal, StateTraj=np.asarray(qTrajectory), CtrlTraj=uTrajectory,\
-                     timeTraj=tTrajectory,curTime=tFinal, indexID=i) #TODO (cbfRRT*)
+            if self.RRTstr_enabled:
+                qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = \
+                    self.steer(v_nearest, desired_theta = desired_theta,m=ball_steeringSteps)
             else:
-                continue
+                qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = \
+                    self.SafeSteering(v_nearest, desired_theta = desired_theta,m=ball_steeringSteps) #TODO (cbfRRTst)
+                sample_okFlag = isAcceptableSample(traj = qTrajectory, desiredSteps_num = ball_steeringSteps)
+                coll_flag = self.iscoll(qTraj=qTrajectory)
+                if sample_okFlag: # Why we need it? 
+                    v_new = Vertex(State=qFinal, StateTraj=np.asarray(qTrajectory), CtrlTraj=uTrajectory,\
+                        timeTraj=tTrajectory,curTime=tFinal, indexID=i) #TODO (cbfRRT*)
+                else:
+                    continue
+        
             #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 
