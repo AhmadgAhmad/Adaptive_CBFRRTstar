@@ -102,8 +102,14 @@ class Params(object):
 
             #CBF-RRT parameters:
             Params.__instance.CBF_RRT_enabled = config.getboolean('CBF_RRT', 'CBF_RRT_enabled')
- 
+
+            #RRT* parameters: 
+            Params.__instance.RRTstr_enabled = config.getboolean('RRTstr', 'RRTstr_enabled')
             
+            #CBF-CLF paramters :
+            Params.__instance.CBF_CLF_enabled = config.getboolean('CBF_CLF', 'CBF_CLF_enabled')
+            
+
 
             #Debugging logs; 
             Params.__instance.debug_flag = config.getboolean('DEBUG_LOG', 'debug_flag')
