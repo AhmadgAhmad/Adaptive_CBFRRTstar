@@ -99,6 +99,8 @@ class Params(object):
             Params.__instance.save_costData = config.getboolean('CE', 'save_costData')
             Params.__instance.save_tree = config.getboolean('CE', 'save_tree')
             Params.__instance.save_adapDist = config.getboolean('CE', 'save_adapDist')
+            Params.__instance.plt_ex2g_Es = config.getboolean('CE', 'plt_ex2g_Es')
+
 
             #CBF-RRT parameters:
             Params.__instance.CBF_RRT_enabled = config.getboolean('CBF_RRT', 'CBF_RRT_enabled')
