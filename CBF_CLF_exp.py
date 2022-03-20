@@ -63,8 +63,10 @@ def main():
         q_init = np.array([-1,-.5, 0])
         xy_goal = np.array([2,2])
     elif worldChar is 'TestingCol':
-        q_init = np.array([1,3, 0])
-        xy_goal = np.array([1,-3])
+        q_init = np.array([0.5,.5, 0])
+        # xy_goal = np.array([1.75,-.25])
+        # xy_goal = np.array([1.75,-.24])
+        xy_goal = np.array([1.75,-.8])
     # File naming stuff:
 
     CBF_RRT_object = CBF_RRTstrr(suffix=worldChar, q_init=q_init, xy_goal=xy_goal, eps_g=.5)
@@ -80,14 +82,30 @@ def main():
     mSteering2goal = np.linalg.norm(xy_goal - xy_v_new) / CBF_RRT_object.params.step_size
 
     theta_goal = math.atan2(xy_goal[1] - xy_v_new[1], xy_goal[0] - xy_v_new[0])
+    # qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = CBF_RRT_object.SafeSteering(xy_v_new,
+    #                                                                           desired_theta=theta_goal,
+    #                                                                           m=int(1.5*mSteering2goal))
     qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = CBF_RRT_object.SafeSteering(xy_v_new,
-                                                                              desired_theta=theta_goal,
-                                                                              m=int(mSteering2goal))
-
+                                                                              desired_pos=xy_goal)                                                                       
+    coll_falg = CBF_RRT_object.iscoll(qTraj=qTrajectory)
     CBF_RRT_object.plot_pathToVertex(qTrajectory,EnPlotting=True)
     CBF_RRT_object.TreePlot.show()
 
+    #Compute the control inputs in terms of \omega and v: 
+
+    # uIn = omega_vCtrl(uIn=uTrajectory,xTraj=qTrajectory)
+
+    saveData([qTrajectory,uIn], 'CDC_cbfclfLP_ctrl_traj_data', suffix=CBF_RRT_object.suffix, CBF_RRT_strr_obj=CBF_RRT_object,
+                     adapDist_iter=CBF_RRT_object.adapIter-1, enFlag=False)
+    
+    fig1, ax1 = plt.subplots()
+    uTrajectory = np.asanyarray(uTrajectory[0])
+    u1_in = uTrajectory[:,0]
+    u2_in = uTrajectory[:,1]
+    ax1.plot(tTrajectory,u1_in)
+    plt.show()
     a = 1
 
 if __name__ == '__main__':
+
     main()
