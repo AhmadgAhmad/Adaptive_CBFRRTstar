@@ -494,12 +494,12 @@ class CBF_RRTstrr(object):
         :param N_qSamples: A threshold indicates the number of samples that are sufficient enough to be exploited (TODO (Doc): How to decide this number)
         :return: None: if the number of points of the discretized trajectories < N_qSamples, (x,y) samples from the estimated distribution
         """
-        if len(Vg_leaves)>=(self.adapIter*20): #The acceptable number of trajectories to adapat upon
+        if len(Vg_leaves)>=(self.adapIter*30): #The acceptable number of trajectories to adapat upon
             frakX = []
             #Find the elite trajectoies then discretize them and use their samples as the elite samples:
             Vg_leaves_costList = [vg.CostToCome for vg in Vg_leaves]
             if (self.adapIter + 3) > 5: 
-                d_factor = 30
+                d_factor = 15
             elif self.adapIter > 2:
                 d_factor = self.adapIter + 3
             else: 
@@ -599,7 +599,7 @@ class CBF_RRTstrr(object):
             # Find the KL divergence the current samples and the previous ones:
             if self.adapIter > 2:
                 KL_div = self.KLdiv(grid_probs)
-                if KL_div < .005:
+                if KL_div < .1:
                     self.kdeOpt_flag = True
                     
                 self.KDE_fitSamples = kde #This kde object will be used to sample form whn the optimal sampling distribution has been reached
@@ -1359,7 +1359,7 @@ class CBF_RRTstrr(object):
                     vg_minCostToCome = None
 
                 # Plotting the expansion tree
-                if False: #actual_i % 50 == 0:  # actual_i == 10 or actual_i == 20 or actual_i==100 or actual_i==150 or actual_i==200 or actual_i==1000:
+                if False:#actual_i % 50 == 0:  # actual_i == 10 or actual_i == 20 or actual_i==100 or actual_i==150 or actual_i==200 or actual_i==1000:
                     t1 = timeit.default_timer()
                     xy_plot = self.xy_goal
                     self.initialize_graphPlot()
@@ -1725,7 +1725,7 @@ def main(worldChar='RSS_paper'):
 
     a = list(np.linspace(29, 49, 21))
     for j in [0]:
-        for iRun in [7]:
+        for iRun in [10]:
             try:
                 runSeed = int(iRun+1)
                 np.random.seed(runSeed)
