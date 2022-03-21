@@ -111,6 +111,10 @@ class CBF_RRTstrr(object):
         self.iterTime_list=None
         self.iRun = None
         
+        # Attributes to count samples, accepted ones and rejected ones. 
+        self.smpl_tr = 0
+        self.smpl_axpd = 0 
+
         #simulation Attributes:
         self.obsWorldList = []
         self.simObject = None
@@ -1179,10 +1183,16 @@ class CBF_RRTstrr(object):
             
             if self.RRTstr_enabled: 
                 coll_flag = self.iscoll(xy_sample)
+                # If the sample is collision free, increment the sample iteration (smpl_tr) and the acceptable samples (smpl_axpd)
                 if coll_flag: # The sample is in collision  
-                    # i = i+1
-                    # self.i = i
+                    self.smpl_tr = self.smpl_tr + 1    
                     continue
+                else:
+                    self.smpl_tr = self.smpl_tr + 1
+                    self.smpl_axpd = self.smpl_axpd + 1     
+            else: 
+                self.smpl_tr = self.smpl_tr + 1
+                self.smpl_axpd = self.smpl_axpd + 1
 
             v_nearest = self.Nearest(xy_sample)  # Return the indexID of the NN vertex
             xy_v_nearest = v_nearest.State[0:2]
