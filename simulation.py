@@ -125,8 +125,11 @@ class Simulation(object):
                     p1 = 10
                     p2 = .5
                     
-                    p1 = 109
-                    p2 = 30
+                    p1 = 1
+                    p2 = 1
+
+                    # p1 = 1
+                    # p2 = 0.1
 
                     # p1 = 55.0
                     # p2 = 30.0
@@ -306,7 +309,7 @@ class Simulation(object):
         m.Params.LogToConsole = 0
 
         goal_reached = False
-
+        agt_uref_t = []
         while not goal_reached:
             # Remove constraints and variables from previous loop
             m.remove(m.getConstrs())
@@ -342,7 +345,10 @@ class Simulation(object):
                                 # Define u_ref as the negative gradient of a potential function  
                                 curTheta = agt.dyn.cur_theta
                                 # u_ref_t = make_column([u_ref[0, self.cur_timestep],u_ref[1, self.cur_timestep] -curTheta]) 
-                                u_ref_t = np.array([u_ref[0, self.cur_timestep],u_ref[1, self.cur_timestep] -curTheta])
+                                u_ref_t = np.array([u_ref[0, self.cur_timestep],(u_ref[1, self.cur_timestep] - curTheta)])
+                                # u_ref_t = np.array([u_ref[0, self.cur_timestep],(curTheta)*self.r_dt])
+                                agt_uref_t.append(u_ref_t)
+                                print((curTheta)*self.r_dt)
                         # elif agt.dyn_enum is Dyn.UNICYCLE_EXT:
                         #     curTheta = agt.dyn.cur_state[2]
                         #     u_ref_t = make_column([u_ref[0, self.cur_timestep]-curTheta, u_ref[1, self.cur_timestep]])
@@ -353,7 +359,10 @@ class Simulation(object):
                             # u_ref_t = make_column(np.array([u_ref[0, self.cur_timestep],u_ref[1, self.cur_timestep]]))
 
 
-                        cost_func = (agt.u - u_ref_t).T.dot((agt.u - u_ref_t)) #
+                        cost_func = (agt.u - 1.5*u_ref_t).T.dot((agt.u - 1.5*u_ref_t)) #
+                        #cost_func = (agt.u).T.dot((agt.u))
+                        if isinstance(cost_func,np.ndarray):
+                            cost_func = cost_func[0]
                         m.setObjective(m.getObjective() + cost_func, GRB.MINIMIZE)
                         m.update()
 
@@ -380,7 +389,7 @@ class Simulation(object):
                         flag = self.agt_circD(agt,self.obsts[k])
                     else:
                         flag = self.agt_circD(agt, self.obsts[k])
-                    if flag:# If there's an obstacle in the sensor footprint [Expect to improve the computational time (adding constrins to the QP takes time)] 
+                    if True: #flag:# If there's an obstacle in the sensor footprint [Expect to improve the computational time (adding constrins to the QP takes time)] 
                         self.add_cbf_pair(m, agt, self.obsts[k])
                 t1_obs_cbfs  = timeit.default_timer()
                 T_obs_cbfs = t1_obs_cbfs-t0_obs_cbfs
@@ -556,10 +565,11 @@ class Simulation(object):
         elif self.agents[0].dyn_enum is Dyn.SINGLE_INT:
             agentsTrajectory = []
             agentsU_Trajectory = []
+            agentsUref_Trajectory = []
             timeTraj = []
             for agt in self.agents:
                 agentsTrajectory.append(agt.dyn.trajectory)
-                # agentsU_Trajectory.append(agt.dyn.uTrajectory)
+                agentsU_Trajectory.append(agt.dyn.uTrajectory)
                 timeTraj.append(agt.dyn.time)
         #plotTrajs(agentsTrajectory, agentsU_Trajectory, timeTraj)
         t1_ret = timeit.default_timer()
