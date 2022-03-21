@@ -1,3 +1,4 @@
+from cmath import pi
 import sys
 print(sys.version)
 import time
@@ -109,7 +110,7 @@ class CBF_RRTstrr(object):
         self.iGoalReached = None
         self.iterTime_list=None
         self.iRun = None
-
+        
         #simulation Attributes:
         self.obsWorldList = []
         self.simObject = None
@@ -288,8 +289,8 @@ class CBF_RRTstrr(object):
 
         if worldChar is 'TestingCol':
             obs1 = Sphere(np.array([10,10]), radius=5)
-            obs2 = Ellipsoid(np.array([1,.2]), np.array([.15,.5]), angle=45)
-            obs3 = Ellipsoid(np.array([1, .2]),np.array([.15,0.5]), angle=-45)
+            obs2 = Ellipsoid(np.array([2,0]), np.array([.15,.5]), angle=45)
+            obs3 = Ellipsoid(np.array([2, 0]),np.array([.15,0.5]), angle=-45)
             #--- self.add_obstacleToWorld(obs1)
             self.add_obstacleToWorld(obs2)
             self.add_obstacleToWorld(obs3)
@@ -333,10 +334,10 @@ class CBF_RRTstrr(object):
             # This world to demonstrad a carfully designed world where multiple paths with have identical cost
 
             obs1 = Ellipsoid(np.array([9, 3]),np.array([1.5,1.5]),angle=0)
-            obs2 = Ellipsoid(np.array([0, 8]), np.array([1.5, 1.5]), angle=0)
+            obs2 = Ellipsoid(np.array([0, 8.5]), np.array([1.5, 1.5]), angle=0)
             obs3 = Ellipsoid(np.array([9, 16.5]), np.array([1.5, 1.5]), angle=0)
             obs4 = Ellipsoid(np.array([15, 5]), np.array([1.5, 1.5]), angle=0)
-            obs5 = Ellipsoid(np.array([5, 5.5]), np.array([1.1, 1.1]), angle=0)
+            obs5 = Ellipsoid(np.array([5, 6]), np.array([1.1, 1.1]), angle=0)
 
             # obs6 = Ellipsoid(np.array([13, 19.4]), np.array([1.5, 1.5]), angle=0)
             obs7 = Ellipsoid(np.array([10, 10.5]), np.array([1.8, .4]), angle=60)
@@ -493,12 +494,12 @@ class CBF_RRTstrr(object):
         :param N_qSamples: A threshold indicates the number of samples that are sufficient enough to be exploited (TODO (Doc): How to decide this number)
         :return: None: if the number of points of the discretized trajectories < N_qSamples, (x,y) samples from the estimated distribution
         """
-        if len(Vg_leaves)>=(self.adapIter*30): #The acceptable number of trajectories to adapat upon
+        if len(Vg_leaves)>=(self.adapIter*20): #The acceptable number of trajectories to adapat upon
             frakX = []
             #Find the elite trajectoies then discretize them and use their samples as the elite samples:
             Vg_leaves_costList = [vg.CostToCome for vg in Vg_leaves]
             if (self.adapIter + 3) > 5: 
-                d_factor = 50
+                d_factor = 30
             elif self.adapIter > 2:
                 d_factor = self.adapIter + 3
             else: 
@@ -741,7 +742,7 @@ class CBF_RRTstrr(object):
         tempTree = BallTree(xyCoorVertices)
 
         # The index of the NN vertex (it is different than indexID of the vertex)
-        nn_currIndex, nn_currDist = tempTree.query_radius(xyVertex.reshape([1, 2]), r=b_raduis+0.1, return_distance=True,sort_results=True)  # TODO (debug) prevent the vertex to be neighbor to itself
+        nn_currIndex, nn_currDist = tempTree.query_radius(xyVertex.reshape([1, 2]), r=b_raduis, return_distance=True,sort_results=True)  # TODO (debug) prevent the vertex to be neighbor to itself
 
         nn_currIndex = nn_currIndex[0].astype(int)
         if not self.params.ordDict_enabled:
@@ -859,7 +860,7 @@ class CBF_RRTstrr(object):
         c_min = v_nearest.CostToCome + self.Cost_v2v(v_nearest,v_new)
         v_pr = v_new  # This might be changed after the SafeSteering (see below!) Warning use the original v_new value
         xy_v_pr = v_pr.State[0:2]
-        if len(Nnear_vSet) == 1 and Nnear_vSet==v_new:
+        if (len(Nnear_vSet) == 1 and Nnear_vSet[0]==v_new) or len(Nnear_vSet)>60:
             pass
         else:
             for v_near in Nnear_vSet:
@@ -876,10 +877,19 @@ class CBF_RRTstrr(object):
                     if mSteering>1:
                         try: 
                             # qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(v_near,desired_pos=[xy_v_pr[0],xy_v_pr[1]],m=mSteering) #TODO[RSS] Exact safe steering 
-                            qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(v_near,desired_theta=desired_theta,m=int(mSteering)+1)
-                            steering_okFlag = isAcceptableSample(traj=qTrajectory, desiredSteps_num = int(mSteering)+1)
-                            if np.linalg.norm(xy_v_pr - qFinal[0:2]) > .1:
-                                steering_okFlag = False
+                            if self.RRTstr_enabled:
+                                qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(v_near,desired_pos=xy_v_pr,m=int(mSteering)+1)
+                                steering_okFlag = True
+                                coll_flag = self.iscoll(qTraj=qTrajectory)
+                                if np.linalg.norm(xy_v_pr - qFinal[0:2]) > .1 or coll_flag:
+                                    steering_okFlag = False
+                            else:
+                                # qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(v_near,desired_theta=desired_theta,m=int(mSteering)+1)
+                                qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(v_near,desired_pos=xy_v_pr,m=int(mSteering)+1)
+                                steering_okFlag = True
+                                # steering_okFlag = isAcceptableSample(traj=qTrajectory, desiredSteps_num = int(mSteering)+1)
+                                if np.linalg.norm(xy_v_pr - qFinal[0:2]) > .1:
+                                    steering_okFlag = False
                         except:
                             steering_okFlag = False
                     else:
@@ -929,6 +939,8 @@ class CBF_RRTstrr(object):
         #TODO[RSS]: Perform SafesteeringExact when rewiring (before macking this change, check if the position of the rewired vertex has deviated)
         v_pr = v_new
         CBF_RRTstrEnable  = self.CBF_RRTstrEnable
+        if len(Nnear_vSet)>60:
+            return
         for v_near in Nnear_vSet:
             #The heuristic CostToCome to v_near through v_new (i.e. after the the rewire attempt)
             norm_v_pr2v_near = self.Cost_v2v(v_pr, v_near)
@@ -950,15 +962,25 @@ class CBF_RRTstrr(object):
                 # SafeSteer from v_new to v_near (rewire v_near to a better parent vertex)
                 if mSteering > 1:
                     try:
-                        qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(v_new,
-                                                                                                desired_pos=[xy_v_near[0],xy_v_near[1]],
-                                                                                                m=mSteering) # TODO[RSS] Exact safe steering
-                        # qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(v_new,
-                        #                                                                         desired_theta=desired_theta,
-                        #                                                                         m=int(mSteering)+1)
-                        steering_okFlag = isAcceptableSample(traj=qTrajectory, desiredSteps_num=int(mSteering)+1) ###Major bug! steering could be ok though the final position is not.
-                        if np.linalg.norm(xy_v_near - qFinal[0:2]) > .1:
-                            steering_okFlag = False
+                        if self.RRTstr_enabled:
+                            qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(v_new,
+                                                                                                    desired_pos=[xy_v_near[0],xy_v_near[1]],
+                                                                                                    m=mSteering) # TODO[RSS] Exact safe steering
+                            steering_okFlag = True ###Major bug! steering could be ok though the final position is not.
+                            coll_flag = self.iscoll(qTraj=qTrajectory)
+                            if np.linalg.norm(xy_v_near - qFinal[0:2]) > .1 or coll_flag:
+                                steering_okFlag = False
+                        else:
+                            qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(v_new,
+                                                                                                    desired_pos=xy_v_near,
+                                                                                                    m=mSteering) # TODO[RSS] Exact safe steering
+                            # qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(v_new,
+                            #                                                                         desired_theta=desired_theta,
+                            #                                                                         m=int(mSteering)+1)
+                            steering_okFlag = isAcceptableSample(traj=qTrajectory, desiredSteps_num=int(mSteering)+1) ###Major bug! steering could be ok though the final position is not.
+                            steering_okFlag = True
+                            if np.linalg.norm(xy_v_near - qFinal[0:2]) > .1:
+                                steering_okFlag = False
                     except:
                         steering_okFlag = False
 
@@ -1148,10 +1170,6 @@ class CBF_RRTstrr(object):
                 saveData([qTrajectory], self.prefix+'CLF_CBF_traj_rss', suffix=self.suffix,CBF_RRT_strr_obj=self,
                          adapDist_iter=None, enFlag=False)
                 break
-
-            #TTTTTTTTTTTT
-            t0_i = timeit.default_timer()
-            #TTTTTTTTTTTT
             # Adapt the sampling distribution based on the expanded trajectories to the goal are
             # ===== Generate Sample in the workspace space and find the nearest vertex to it:
             
@@ -1160,10 +1178,10 @@ class CBF_RRTstrr(object):
             #>>>> RRTstar_ext (Return a sample in the free workspace):
             
             if self.RRTstr_enabled: 
-                coll_falg = self.iscoll(xy_sample)
+                coll_flag = self.iscoll(xy_sample)
                 if coll_flag: # The sample is in collision  
-                    i = i+1
-                    self.i = i
+                    # i = i+1
+                    # self.i = i
                     continue
 
             v_nearest = self.Nearest(xy_sample)  # Return the indexID of the NN vertex
@@ -1175,35 +1193,42 @@ class CBF_RRTstrr(object):
 
             # TODO[RSS] No need for this safe-steering step, you just need to safe steer in chose parent. Given that choose parent procedure will return the nn vertex anyway. 
             if self.RRTstr_enabled:
+                xy_d = [xy_v_nearest[0]+(b_radi*math.cos(desired_theta)),xy_v_nearest[1]+(b_radi*math.sin(desired_theta))] 
                 qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = \
-                    self.steer(v_nearest, desired_theta = desired_theta,m=ball_steeringSteps)
+                    self.SafeSteering(v_nearest, desired_pos= xy_d,m=ball_steeringSteps)
+                coll_falg = self.iscoll(qTraj=qTrajectory)
+                if coll_flag: # The edge is in collision  
+                    i = i+1
+                    self.i = i
+                    continue
+                v_new = Vertex(State=qFinal, StateTraj=np.asarray(qTrajectory), CtrlTraj=uTrajectory,\
+                        timeTraj=tTrajectory,curTime=tFinal, indexID=i)
             else:
                 qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = \
                     self.SafeSteering(v_nearest, desired_theta = desired_theta,m=ball_steeringSteps) #TODO (cbfRRTst)
-                sample_okFlag = isAcceptableSample(traj = qTrajectory, desiredSteps_num = ball_steeringSteps)
-                coll_flag = self.iscoll(qTraj=qTrajectory)
-                if sample_okFlag: # Why we need it? 
-                    v_new = Vertex(State=qFinal, StateTraj=np.asarray(qTrajectory), CtrlTraj=uTrajectory,\
+                # sample_okFlag = isAcceptableSample(traj = qTrajectory, desiredSteps_num = ball_steeringSteps)
+                # if sample_okFlag: # Why we need it? 
+                v_new = Vertex(State=qFinal, StateTraj=np.asarray(qTrajectory), CtrlTraj=uTrajectory,\
                         timeTraj=tTrajectory,curTime=tFinal, indexID=i) #TODO (cbfRRT*)
-                else:
-                    continue
+                # else:
+                #     continue
         
             #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 
             
             #Since we will have more artificial samples to adapt the sampling distribution:
-            if len(v_new.StateTraj[:,0]) is 1:
-                actual_i = actual_i + 1
+            # if len(v_new.StateTraj[:,0]) is 1:
+            #     actual_i = actual_i + 1
             actual_i = actual_i + 1
             self.addVertex(v_new)
             # ===== Check the near vertices in the tree within a ball of the vertex:
             gamma = self.params.gamma
-            gamma = 20
+            # gamma = 20
             #Experemntally for edge length =1
             cardV = len(self.TreeT.VerticesSet)                  # Complexity: O(1)
             vb_radi = gamma * math.sqrt(math.log(cardV) / cardV) #gamma * math.log(cardV)
-            steer_radi = (self.params.edge_length)+1.1
+            steer_radi = (self.params.edge_length)+.15
             b_radi = min(vb_radi, steer_radi) #TODO why it is slow?
             # b_radi = .95
             if b_radi<.46:
@@ -1217,9 +1242,10 @@ class CBF_RRTstrr(object):
             # ===== Choose the best parent for v_new from the near vertices:
             #RRT
             if not self.CBF_RRT_enable: 
-                b_radi = min(vb_radi, steer_radi-.8)
-                Nnear_vSet = self.Near(Vertex=v_new,b_raduis=b_radi)  # TODO: (debug) prevent the vertex to be neighbor to itself
+                # b_radi = min(vb_radi, steer_radi)
+                Nnear_vSet = self.Near(Vertex=v_new,b_raduis=b_radi+1)  # TODO: (debug) prevent the vertex to be neighbor to itself
                 Nnear_vSet = Nnear_vSet[1:]
+                # v_nearest = Nnear_vSet[0] 
                 v_min, v_new = self.ChooseParent(Nnear_vSet=Nnear_vSet, v_nearest=v_nearest, v_new=v_new)
             else: # No rewiring procedure
                 v_min = v_nearest
@@ -1288,7 +1314,7 @@ class CBF_RRTstrr(object):
                         Traj = []
                         # Plotting the evolution of the costs:
                         try:
-                            if False: #actual_i % 100 == 0:#actual_i % 50 == 0 and vg_minCostToCome.CostToCome is not None:
+                            if actual_i % 100 == 0:#actual_i % 50 == 0 and vg_minCostToCome.CostToCome is not None:
                                 Traj, timeTraj = self.get_xythetaTraj(vg_minCostToCome)
                                 timeTraj = np.linspace(0, len(Traj[0, :]) * self.params.step_size, len(Traj[0, :]))
                                 # plt.plot(timeTraj, Traj[0, :])
@@ -1333,7 +1359,7 @@ class CBF_RRTstrr(object):
                     vg_minCostToCome = None
 
                 # Plotting the expansion tree
-                if False:#actual_i % 100 == 0:  # actual_i == 10 or actual_i == 20 or actual_i==100 or actual_i==150 or actual_i==200 or actual_i==1000:
+                if False: #actual_i % 50 == 0:  # actual_i == 10 or actual_i == 20 or actual_i==100 or actual_i==150 or actual_i==200 or actual_i==1000:
                     t1 = timeit.default_timer()
                     xy_plot = self.xy_goal
                     self.initialize_graphPlot()
@@ -1382,7 +1408,7 @@ class CBF_RRTstrr(object):
                          CBF_RRT_strr_obj=self,
                          adapDist_iter=None, enFlag=False)
 
-            if i>3001:
+            if i>2000:
                 print("done")
                 break
             print("Iter:", i)
@@ -1400,12 +1426,12 @@ class CBF_RRTstrr(object):
             if ((kde_enabled and not kdeOpt_flag) or (CE_enabled and not gmmOpt_flag)) and (self.initTree_done or not self.params.initTree_flag) and not vParent_new.vgFlag:# and cardV >30:
                 #Attempt steering to the goal:
                 xy_v_new = v_new.State[0:2]
-                mSteering2goal = np.linalg.norm(xy_goal-xy_v_new) / self.params.step_size
+                mSteering2goal = np.linalg.norm(xy_goal-xy_v_new) / (self.params.step_size*1.5)
 
                 theta_goal = math.atan2(xy_goal[1] - xy_v_new[1], xy_goal[0] - xy_v_new[0])
                 qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(v_new,
                                                                                           desired_theta=theta_goal,
-                                                                                          m=int(mSteering2goal)+1)
+                                                                                          m=int(mSteering2goal))
                 # qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(v_new,
                 #                                                                           desired_pos=[xy_goal[0],xy_goal[1]],
                 #                                                                           m=int(mSteering2goal)+1)
@@ -1437,12 +1463,9 @@ class CBF_RRTstrr(object):
             self.i = i
             if i>10000:
                 a=1
-            # TTTTTTTTTTTT
-            t1_i = timeit.default_timer()
-            # TTTTTTTTTTTT
-            time_iter_i = t1_i - t0_i
-            iterTime_list.append(time_iter_i)
-            self.iterTime_list = iterTime_list
+
+            
+            
 
         return v_final ,self.TreeT
 
@@ -1465,6 +1488,8 @@ class CBF_RRTstrr(object):
         xy_start = self.q_init[0:2]
         xy_goal = self.xy_goal[0:2]
         eps_g = self.eps_g
+        eps_g = 0.15
+        
         goalRegion = plt.Circle((xy_goal[0], xy_goal[1]), eps_g, linestyle='--', color='g', fill=False)
         ax.add_patch(goalRegion)
         plt.plot(xy_start[0], xy_start[1], "xb", markersize=15, label="Initial State", hold='on')
@@ -1534,7 +1559,7 @@ class CBF_RRTstrr(object):
 
         # Plot all the paths
         for vertex in VerticesSetValues:
-            if vertex.vgFlag:
+            if False:# vertex.vgFlag and not self.params.plt_ex2g_Es:
                 continue
             else:
                 self.plot_vertex(vertex, EnPlotting=True)
@@ -1655,6 +1680,37 @@ def arcLength(qTrajectory):
             arc_Length = arc_Length + darcLength
 
     return arc_Length
+
+def si_to_uni_dyn(dxi, poses):
+    """A mapping from single-integrator to unicycle dynamics.
+        dxi: 2xN numpy array with single-integrator control inputs
+        poses: 2xN numpy array with single-integrator poses
+        -> 2xN numpy array of unicycle control inputs
+        """
+
+    #Check user input types
+    assert isinstance(dxi, np.ndarray), "In the si_to_uni_dyn function created by the create_si_to_uni_dynamics function, the single integrator velocity inputs (dxi) must be a numpy array. Recieved type %r." % type(dxi).__name__
+    assert isinstance(poses, np.ndarray), "In the si_to_uni_dyn function created by the create_si_to_uni_dynamics function, the current robot poses (poses) must be a numpy array. Recieved type %r." % type(poses).__name__
+
+    #Check user input ranges/sizes
+    assert dxi.shape[0] == 2, "In the si_to_uni_dyn function created by the create_si_to_uni_dynamics function, the dimension of the single integrator velocity inputs (dxi) must be 2 ([x_dot;y_dot]). Recieved dimension %r." % dxi.shape[0]
+    assert poses.shape[0] == 3, "In the si_to_uni_dyn function created by the create_si_to_uni_dynamics function, the dimension of the current pose of each robot must be 3 ([x;y;theta]). Recieved dimension %r." % poses.shape[0]
+    assert dxi.shape[1] == poses.shape[1], "In the si_to_uni_dyn function created by the create_si_to_uni_dynamics function, the number of single integrator velocity inputs must be equal to the number of current robot poses. Recieved a single integrator velocity input array of size %r x %r and current pose array of size %r x %r." % (dxi.shape[0], dxi.shape[1], poses.shape[0], poses.shape[1])
+    linear_velocity_gain = 1 
+    angular_velocity_limit = np.pi
+
+    M,N = np.shape(dxi)
+
+    a = np.cos(poses[2, :])
+    b = np.sin(poses[2, :])
+
+    dxu = np.zeros((2, N))
+    dxu[0, :] = linear_velocity_gain*(a*dxi[0, :] + b*dxi[1, :])
+    dxu[1, :] = angular_velocity_limit*np.arctan2(-b*dxi[0, :] + a*dxi[1, :], dxu[0, :])/(np.pi/2)
+
+    return dxu
+
+
 def isAcceptableSample(traj,desiredSteps_num):
     """
     Check if the number of the steps of the trajectory is the same as the number of the steps that are fed to the safeSteerr method.
@@ -1664,7 +1720,7 @@ def isAcceptableSample(traj,desiredSteps_num):
     """
     # return int(len(traj[0,:])-1)==int(desiredSteps_num)
     return (int(len(traj)) <= int(desiredSteps_num+1)) and (int(len(traj)) >= int(desiredSteps_num-2))
-def main(worldChar='Cltrd_world_big'):
+def main(worldChar='RSS_paper'):
     Params('configs.ini')
 
     a = list(np.linspace(29, 49, 21))
@@ -1720,8 +1776,8 @@ def main(worldChar='Cltrd_world_big'):
                     prefix = '_'
                 CBF_RRT_object.prefix = prefix
                 CBF_RRT_object.Initialization(worldChar=worldChar)
-                CBF_RRT_object.initialize_graphPlot()
-                plt.show()
+                # CBF_RRT_object.initialize_graphPlot()
+                # plt.show()
                 CBF_RRT_object.iRun = int(iRun+1)
                 #---- Manual plan:
                 #----
