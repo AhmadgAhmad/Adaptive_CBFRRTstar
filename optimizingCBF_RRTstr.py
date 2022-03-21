@@ -613,9 +613,9 @@ class CBF_RRTstrr(object):
             saveData(self.goal_costToCome_list, 'adapCBF_RRTstr_Cost', suffix=self.suffix, CBF_RRT_strr_obj=self,
                      adapDist_iter=self.adapIter-1, enFlag=False)
 
-            saveData([self.TreeT,self.vg_minCostToCome_list], 'adapCBF_RRTstr_Tree_rss', suffix=self.suffix, CBF_RRT_strr_obj=self,
+            saveData([self.TreeT,self.vg_minCostToCome_list], 'adapCBF_RRTstr_Tree_CDC', suffix=self.suffix, CBF_RRT_strr_obj=self,
                      adapDist_iter=self.adapIter - 1, enFlag=False)
-            saveData([Xxgrid, Xygrid, grid_probs.reshape(Xxgrid.shape),elite_samples_arr], 'adapCBF_RRTstr_KDEgridProbs_rss',
+            saveData([Xxgrid, Xygrid, grid_probs.reshape(Xxgrid.shape),elite_samples_arr], 'adapCBF_RRTstr_KDEgridProbs_CDC',
                      suffix=self.suffix, CBF_RRT_strr_obj=self,
                      adapDist_iter=self.adapIter - 1, enFlag=False)
 
@@ -1324,7 +1324,7 @@ class CBF_RRTstrr(object):
                         Traj = []
                         # Plotting the evolution of the costs:
                         try:
-                            if actual_i % 100 == 0:#actual_i % 50 == 0 and vg_minCostToCome.CostToCome is not None:
+                            if False: #actual_i % 100 == 0:#actual_i % 50 == 0 and vg_minCostToCome.CostToCome is not None:
                                 Traj, timeTraj = self.get_xythetaTraj(vg_minCostToCome)
                                 timeTraj = np.linspace(0, len(Traj[0, :]) * self.params.step_size, len(Traj[0, :]))
                                 # plt.plot(timeTraj, Traj[0, :])
@@ -1400,25 +1400,25 @@ class CBF_RRTstrr(object):
             flag3000  = (self.i == 2999 or self.i == 3000 or self.i == 3001)
             flag5000  = (self.i == 4999 or self.i == 5000 or self.i == 5001)
             flag10000 = (self.i == 9999 or self.i == 10000 or self.i == 10001)
-            if flag500:# flag500 or flag1000 or flag2000 or flag5000:#flag10000 or flag1000 or flag2500 or flag5000 or flag100 or flag500:
+            if flag3000:# flag500 or flag1000 or flag2000 or flag5000:#flag10000 or flag1000 or flag2500 or flag5000 or flag100 or flag500:
                 #Save the costs:
 
                 #The first element of the saved list contains the iteration that the goal has been reached at.
-                saveData([self.iGoalReached,self.goal_costToCome_list], self.prefix+'CBF_RRTstr_Cost_rss', suffix=self.suffix,CBF_RRT_strr_obj=self,
-                         adapDist_iter=None, enFlag=False)
+                saveData([self.iGoalReached,self.goal_costToCome_list], self.prefix+'CBF_RRTstr_Cost_CDC', suffix=self.suffix,CBF_RRT_strr_obj=self,
+                         adapDist_iter=None, enFlag=True)
 
-                saveData(self.iterTime_list, self.prefix + 'CBF_RRTstr_iterTime',
+                saveData(self.iterTime_list, self.prefix + 'CBF_RRTstr_iterTime_CDC',
                          suffix=self.suffix, CBF_RRT_strr_obj=self,
                          adapDist_iter=None, enFlag=False)
 
                 #Save the tree:
-                saveData([self.TreeT,self.vg_minCostToCome_list], self.prefix+'CBF_RRTstr_Tree_rss', suffix=self.suffix, CBF_RRT_strr_obj=self,
+                saveData([self.TreeT,self.vg_minCostToCome_list], self.prefix+'CBF_RRTstr_Tree_CDC', suffix=self.suffix, CBF_RRT_strr_obj=self,
                          adapDist_iter=None, enFlag=False)
                 saveData([Traj], self.prefix + 'CBF_RRTstr_PathToG', suffix=self.suffix,
                          CBF_RRT_strr_obj=self,
                          adapDist_iter=None, enFlag=False)
 
-            if i>2000:
+            if i>3000:
                 print("done")
                 break
             print("Iter:", i)
