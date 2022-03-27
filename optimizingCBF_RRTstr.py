@@ -337,7 +337,7 @@ class CBF_RRTstrr(object):
         if worldChar is 'RSS_paper': 
             # This world to demonstrad a carfully designed world where multiple paths with have identical cost
 
-            obs1 = Ellipsoid(np.array([9, 3]),np.array([1.5,1.5]),angle=0)
+            obs1 = Ellipsoid(np.array([9.16, 2.8]),np.array([1.5,1.5]),angle=0)
             obs2 = Ellipsoid(np.array([0, 8.5]), np.array([1.5, 1.5]), angle=0)
             obs3 = Ellipsoid(np.array([9, 16.5]), np.array([1.5, 1.5]), angle=0)
             obs4 = Ellipsoid(np.array([15, 5]), np.array([1.5, 1.5]), angle=0)
@@ -353,6 +353,27 @@ class CBF_RRTstrr(object):
             # obs13 = Ellipsoid(np.array([17, 7.5]), np.array([1.5, 1.5]), angle=0)
             # obs14= Ellipsoid(np.array([17, 2.5]), np.array([1.5, 1.5]), angle=0)
 
+
+            # The cross obstacles
+            obs1s = Ellipsoid(np.array([8.62,11.2]),np.array([0.35,0.35]),angle=0)
+            obs2s = Ellipsoid(np.array([10.73,11.88]), np.array([0.35,0.35]), angle=0)
+            obs3s = Ellipsoid(np.array([9.26,9.26]), np.array([0.35,0.35]), angle=0)
+            obs4s = Ellipsoid(np.array([11.32,9.76]), np.array([0.35,0.35]), angle=0)
+
+            obs5s = Ellipsoid(np.array([9.45,9.56]),np.array([0.35,0.35]),angle=0)
+            obs6s = Ellipsoid(np.array([8.98,11.06]), np.array([0.35,0.35]), angle=0)
+            obs7s = Ellipsoid(np.array([10.54,11.5]), np.array([0.35,0.35]), angle=0)
+            obs8s = Ellipsoid(np.array([11,10]), np.array([0.35,0.35]), angle=0)
+
+            obs1m = Ellipsoid(np.array([9.6,9.9]),np.array([0.39,0.39]),angle=0)
+            obs2m = Ellipsoid(np.array([9.32,10.9]), np.array([0.39,0.39]), angle=0)
+            obs3m = Ellipsoid(np.array([10.32,11.18]), np.array([0.39,0.39]), angle=0)
+            obs4m = Ellipsoid(np.array([10.63,10.25]), np.array([0.39,0.39]), angle=0)
+
+            obs1l = Ellipsoid(np.array([9.95,10.50]), np.array([0.41,0.41]), angle=0)
+
+
+
             self.add_obstacleToWorld(obs1)
             self.add_obstacleToWorld(obs2)
             self.add_obstacleToWorld(obs3)
@@ -361,6 +382,23 @@ class CBF_RRTstrr(object):
             # self.add_obstacleToWorld(obs6)
             self.add_obstacleToWorld(obs7)
             self.add_obstacleToWorld(obs8)
+
+            #Cross obstacles 
+            self.add_obstacleToWorld(obs1s)
+            self.add_obstacleToWorld(obs2s)
+            self.add_obstacleToWorld(obs3s)
+            self.add_obstacleToWorld(obs4s)
+            self.add_obstacleToWorld(obs5s)
+            self.add_obstacleToWorld(obs6s)
+            self.add_obstacleToWorld(obs7s)
+            self.add_obstacleToWorld(obs8s)
+            self.add_obstacleToWorld(obs1m)
+            self.add_obstacleToWorld(obs2m)
+            self.add_obstacleToWorld(obs3m)
+            self.add_obstacleToWorld(obs4m)
+            self.add_obstacleToWorld(obs1l)
+
+
             # self.add_obstacleToWorld(obs9)
             # self.add_obstacleToWorld(obs10)
             # self.add_obstacleToWorld(obs11)
@@ -832,6 +870,22 @@ class CBF_RRTstrr(object):
         # temp = self.Col_check(qTrajectory)
         return qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory[0][1:] + tInitial
     
+    def Steering(self, vertex = None, desired_pose= None,m=20):
+        """
+        """
+        qFinal = [] 
+        tFinal = [] 
+        uTrajectory = [] 
+        qTrajectory = []
+        tTrajectory = []
+        init_pose = vertex.State[0:2]
+        x_traj = np.linspace(init_pose[0],desired_pose[0], m)
+        y_traj = np.linspace(init_pose[1],desired_pose[1], m)
+        qTrajectory = np.array([x_traj,y_traj]).T
+        qTrajectory = list(qTrajectory)
+        qFinal = qTrajectory[-1]
+        # plt.plot(x_traj,y_traj)
+        return qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory
     
     def SafeSteering2Goal(self,xy_agt,xy_goal):
         """
@@ -882,7 +936,8 @@ class CBF_RRTstrr(object):
                         try: 
                             # qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(v_near,desired_pos=[xy_v_pr[0],xy_v_pr[1]],m=mSteering) #TODO[RSS] Exact safe steering 
                             if self.RRTstr_enabled:
-                                qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(v_near,desired_pos=xy_v_pr,m=int(mSteering)+1)
+                                qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = \
+                                     self.Steering(v_near, desired_pose= xy_v_pr, m=20)
                                 steering_okFlag = True
                                 coll_flag = self.iscoll(qTraj=qTrajectory)
                                 if np.linalg.norm(xy_v_pr - qFinal[0:2]) > .1 or coll_flag:
@@ -967,13 +1022,14 @@ class CBF_RRTstrr(object):
                 if mSteering > 1:
                     try:
                         if self.RRTstr_enabled:
-                            qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(v_new,
-                                                                                                    desired_pos=[xy_v_near[0],xy_v_near[1]],
-                                                                                                    m=mSteering) # TODO[RSS] Exact safe steering
-                            steering_okFlag = True ###Major bug! steering could be ok though the final position is not.
+                            qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = \
+                                     self.Steering(v_new, desired_pose= xy_v_near, m=20)
+                            steering_okFlag = True
                             coll_flag = self.iscoll(qTraj=qTrajectory)
                             if np.linalg.norm(xy_v_near - qFinal[0:2]) > .1 or coll_flag:
                                 steering_okFlag = False
+                            
+                        
                         else:
                             qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = self.SafeSteering(v_new,
                                                                                                     desired_pos=xy_v_near,
@@ -1075,26 +1131,80 @@ class CBF_RRTstrr(object):
         obsWorldList = self.obsWorldList
         if xy_sample is not None: 
             for obst in obsWorldList: 
-                try:
-                    M_ellip = obst.M_ellip
-                except: 
-                    raise('Define your obstacle as an ellipsoid (even if it is a sphere)')
-                h = ((xy_sample - obst.state[0:2]).transpose().dot(M_ellip).dot((xy_sample - obst.state[0:2])) - 1) * obst.sign
-                if h<0:
-                   col_flag = True
-                   break 
+                # For each configuration of the trajectroy check if the robot body collide with obstacles: 
+                #The ellipsoid parameters and state:
+                a = obst.a
+                b = obst.b
+                thetaE = obst.angle
+                c = math.cos(thetaE/57.3)
+                s = math.sin(thetaE/57.3)
+                xo = obst.state[0]
+                yo = obst.state[1]
+
+                #Rotate the center of the state of the agent:
+                xa = xy_sample[0]
+                ya = xy_sample[1]
+                ra_sensor = .5
+
+                xa_rot = c*xa + s*ya
+                ya_rot = -s*xa + c*ya
+                #Compute the angle betwee the center of the ellips and the center of the agent footprint circle:
+                dx = xa_rot - xo
+                dy = ya_rot - yo
+                angle = math.atan2(-dy, dx)
+                x, y = obst.pointFromAngle(angle)
+                distance = math.hypot(x - xa_rot, y - ya_rot)
+                if  distance <= ra_sensor: 
+                    col_flag = True
+                    break
+                # try:
+                #     M_ellip = obst.M_ellip
+                # except: 
+                #     raise('Define your obstacle as an ellipsoid (even if it is a sphere)')
+                # h = ((xy_sample - obst.state[0:2]).transpose().dot(M_ellip).dot((xy_sample - obst.state[0:2])) - 1) * obst.sign
+                # if h<0:
+                #    col_flag = True
+                #    break 
         elif qTraj is not None:
             # TODO: make a list of xyTraj of the xy positions of the trajectory: 
             for xy in qTraj:
                 for obst in obsWorldList: 
-                    try:
-                        M_ellip = obst.M_ellip
-                    except: 
-                        raise('Define your obstacle as an ellipsoid (even if it is a sphere)')
-                    h = ((xy - obst.state[0:2]).transpose().dot(M_ellip).dot((xy - obst.state[0:2])) - 1) * obst.sign
-                    if h<0:
-                        col_flag = True
+                    # For each configuration of the trajectroy check if the robot body collide with obstacles: 
+                     #The ellipsoid parameters and state:
+                    a = obst.a
+                    b = obst.b
+                    thetaE = obst.angle
+                    c = math.cos(thetaE/57.3)
+                    s = math.sin(thetaE/57.3)
+                    xo = obst.state[0]
+                    yo = obst.state[1]
+
+                    #Rotate the center of the state of the agent:
+                    xa = xy[0]
+                    ya = xy[1]
+                    ra_sensor = 1.0
+
+                    xa_rot = c*xa + s*ya
+                    ya_rot = -s*xa + c*ya
+                    #Compute the angle betwee the center of the ellips and the center of the agent footprint circle:
+                    dx = xa_rot - xo
+                    dy = ya_rot - yo
+                    angle = math.atan2(-dy, dx)
+                    x, y = obst.pointFromAngle(angle)
+                    distance = math.hypot(x - xa_rot, y - ya_rot)
+                    col_flag =  distance <= ra_sensor
+                    if col_flag:
                         break
+                if col_flag:
+                    break
+                    # try:
+                    #     M_ellip = obst.M_ellip
+                    # except: 
+                    #     raise('Define your obstacle as an ellipsoid (even if it is a sphere)')
+                    # h = ((xy - obst.state[0:2]).transpose().dot(M_ellip).dot((xy - obst.state[0:2])) - 1) * obst.sign
+                    # if h<0:
+                    #     col_flag = True
+                    #     break
         else:
             raise('Neither xy_sample nor qTraj are passed to the function')
         return col_flag
@@ -1182,14 +1292,15 @@ class CBF_RRTstrr(object):
             #>>>> RRTstar_ext (Return a sample in the free workspace):
             
             if self.RRTstr_enabled: 
-                coll_flag = self.iscoll(xy_sample)
+                # xy_sample1 = np.array([-0.63,7.912])
+                coll_flag = self.iscoll(xy_sample = xy_sample)
                 # If the sample is collision free, increment the sample iteration (smpl_tr) and the acceptable samples (smpl_axpd)
                 if coll_flag: # The sample is in collision  
                     self.smpl_tr = self.smpl_tr + 1    
                     continue
-                else:
-                    self.smpl_tr = self.smpl_tr + 1
-                    self.smpl_axpd = self.smpl_axpd + 1     
+                # else:
+                #     # self.smpl_tr = self.smpl_tr + 1
+                #     self.smpl_axpd = self.smpl_axpd + 1     
             else: 
                 self.smpl_tr = self.smpl_tr + 1
                 self.smpl_axpd = self.smpl_axpd + 1
@@ -1204,13 +1315,14 @@ class CBF_RRTstrr(object):
             # TODO[RSS] No need for this safe-steering step, you just need to safe steer in chose parent. Given that choose parent procedure will return the nn vertex anyway. 
             if self.RRTstr_enabled:
                 xy_d = [xy_v_nearest[0]+(b_radi*math.cos(desired_theta)),xy_v_nearest[1]+(b_radi*math.sin(desired_theta))] 
+                # xy_d = np.array([3.99,5.13])
                 qFinal, tFinal, uTrajectory, qTrajectory, tTrajectory = \
-                    self.SafeSteering(v_nearest, desired_pos= xy_d,m=ball_steeringSteps)
-                coll_falg = self.iscoll(qTraj=qTrajectory)
+                    self.Steering(v_nearest, desired_pose= xy_d, m=20)
+                coll_flag = self.iscoll(qTraj=qTrajectory)
                 if coll_flag: # The edge is in collision  
-                    i = i+1
-                    self.i = i
-                    continue
+                    self.smpl_tr = self.smpl_tr + 1 
+                    continue # In order to mitigate this iteration. 
+                self.smpl_tr = self.smpl_tr + 1
                 v_new = Vertex(State=qFinal, StateTraj=np.asarray(qTrajectory), CtrlTraj=uTrajectory,\
                         timeTraj=tTrajectory,curTime=tFinal, indexID=i)
             else:
@@ -1265,7 +1377,7 @@ class CBF_RRTstrr(object):
 
 
             # ===== Rewire the near vertices (check if choosing v_new as a parent would lower the cost)
-            if not self.CBF_RRT_enable: #No rewiring procedure is required: 
+            if not self.CBF_RRT_enable:  
                 # b_radi = min(vb_radi, steer_radi)
                 # Nnear_vSet = self.Near(Vertex=v_new,b_raduis=b_radi)  # TODO: (debug) prevent the vertex to be neighbor to itself
                 # Nnear_vSet = Nnear_vSet[1:]
@@ -1279,7 +1391,10 @@ class CBF_RRTstrr(object):
                     if len(vg_nearSet) > 0:
                         if not self.goalReached:
                             self.goalReached = True
-                            self.iGoalReached = i
+                            if self.RRTstr_enabled:
+                                self.iGoalReached = self.smpl_tr
+                            else:
+                                self.iGoalReached = i
                         costMin = 10000
                         for vertex in vg_nearSet:
                             if vertex.CostToCome < costMin and vertex.CostToCome is not None:
@@ -1324,7 +1439,7 @@ class CBF_RRTstrr(object):
                         Traj = []
                         # Plotting the evolution of the costs:
                         try:
-                            if False: #actual_i % 100 == 0:#actual_i % 50 == 0 and vg_minCostToCome.CostToCome is not None:
+                            if actual_i % 5000 == 0:#actual_i % 50 == 0 and vg_minCostToCome.CostToCome is not None:
                                 Traj, timeTraj = self.get_xythetaTraj(vg_minCostToCome)
                                 timeTraj = np.linspace(0, len(Traj[0, :]) * self.params.step_size, len(Traj[0, :]))
                                 # plt.plot(timeTraj, Traj[0, :])
@@ -1369,7 +1484,7 @@ class CBF_RRTstrr(object):
                     vg_minCostToCome = None
 
                 # Plotting the expansion tree
-                if False:#actual_i % 50 == 0:  # actual_i == 10 or actual_i == 20 or actual_i==100 or actual_i==150 or actual_i==200 or actual_i==1000:
+                if False:#actual_i % 100 == 0:  # actual_i == 10 or actual_i == 20 or actual_i==100 or actual_i==150 or actual_i==200 or actual_i==1000:
                     t1 = timeit.default_timer()
                     xy_plot = self.xy_goal
                     self.initialize_graphPlot()
@@ -1405,7 +1520,7 @@ class CBF_RRTstrr(object):
 
                 #The first element of the saved list contains the iteration that the goal has been reached at.
                 saveData([self.iGoalReached,self.goal_costToCome_list], self.prefix+'CBF_RRTstr_Cost_CDC', suffix=self.suffix,CBF_RRT_strr_obj=self,
-                         adapDist_iter=None, enFlag=True)
+                         adapDist_iter=None, enFlag=False)
 
                 saveData(self.iterTime_list, self.prefix + 'CBF_RRTstr_iterTime_CDC',
                          suffix=self.suffix, CBF_RRT_strr_obj=self,
@@ -1418,7 +1533,7 @@ class CBF_RRTstrr(object):
                          CBF_RRT_strr_obj=self,
                          adapDist_iter=None, enFlag=False)
 
-            if i>3000:
+            if i>5090:
                 print("done")
                 break
             print("Iter:", i)
@@ -1735,7 +1850,7 @@ def main(worldChar='RSS_paper'):
 
     a = list(np.linspace(29, 49, 21))
     for j in [0]:
-        for iRun in [10]:
+        for iRun in [19]:
             try:
                 runSeed = int(iRun+1)
                 np.random.seed(runSeed)
@@ -1767,8 +1882,8 @@ def main(worldChar='RSS_paper'):
                     q_init = np.array([2, 12.5, 0])
                     xy_goal = np.array([23, 12.5])
                 elif worldChar is 'RSS_paper':
-                    q_init = np.array([0.5, 3, 0])
-                    xy_goal = np.array([15, 13])
+                    q_init = np.array([1.2, 2.55, 0])
+                    xy_goal = np.array([15.65, 11])
 
                 #File naming stuff:
 
@@ -1786,8 +1901,8 @@ def main(worldChar='RSS_paper'):
                     prefix = '_'
                 CBF_RRT_object.prefix = prefix
                 CBF_RRT_object.Initialization(worldChar=worldChar)
-                # CBF_RRT_object.initialize_graphPlot()
-                # plt.show()
+                CBF_RRT_object.initialize_graphPlot()
+                plt.show()
                 CBF_RRT_object.iRun = int(iRun+1)
                 #---- Manual plan:
                 #----
