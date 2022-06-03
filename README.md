@@ -1,5 +1,5 @@
 # Adaptive CBF-RRT* 
-This repo  is for the implementation of the a sampling-based motion planning algorithm, in which we utilize control barrier function as a low level local planner for RRT*. Furthermore, we equip the algorithm with adaptive sampling procedure to enhance the sampling in the configuration space. For details refer to [the arxiv paper]. 
+This repo  is for the implementation of the a sampling-based motion planning algorithm, in which we utilize control barrier function as a low level local planner for RRT*. Furthermore, we equip the algorithm with adaptive sampling procedure to enhance the sampling in the configuration space. For details refer to https://arxiv.org/abs/2206.00795. 
 
 # Safety-critical local trajectory planning 
 The following local planners are used with RRT* instead of traditional steering action with collusion check. 
